@@ -9,9 +9,9 @@
 		<relativePath/>
 	</parent>
 	<groupId>com.lezztto</groupId>
-	<artifactId>LmfClients</artifactId>
+	<artifactId>LmfBank</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>LmfClients</name>
+	<name>LmfBank</name>
 	<properties>
 		<java.version>17</java.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
