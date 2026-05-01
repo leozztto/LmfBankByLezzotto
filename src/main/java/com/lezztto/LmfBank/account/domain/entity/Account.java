@@ -1,5 +1,7 @@
 package com.lezztto.LmfBank.account.domain.entity;
 
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
+import com.lezztto.LmfBank.account.domain.enums.AccountType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -74,8 +76,23 @@ public class Account {
 
     private LocalDateTime updateAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AccountStatus accountStatus;
+
+    @OneToOne(mappedBy = "account",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private AccountBalance balance;
+
     public void addAddress(Address address) {
         addresses.add(address);
         address.setAccount(this);
+    }
+
+    public void addBalance(AccountBalance balance) {
+        this.balance = balance;
+        balance.setAccount(this);
     }
 }

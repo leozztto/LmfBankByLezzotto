@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.account.domain.entity;
 
+import com.lezztto.LmfBank.account.domain.enums.AddressType;
 import jakarta.persistence.*;
 import lombok.*;
 

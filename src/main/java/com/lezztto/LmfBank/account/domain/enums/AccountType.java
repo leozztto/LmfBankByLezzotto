@@ -1,4 +1,4 @@
-package com.lezztto.LmfBank.account.domain.entity;
+package com.lezztto.LmfBank.account.domain.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

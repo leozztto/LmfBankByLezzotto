@@ -1,6 +1,6 @@
 package com.lezztto.LmfBank.kafka.dto;
 
-import com.lezztto.LmfBank.account.domain.entity.AddressType;
+import com.lezztto.LmfBank.account.domain.enums.AddressType;
 import lombok.Getter;
 import lombok.Setter;
 

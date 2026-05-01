@@ -1,6 +1,7 @@
 package com.lezztto.LmfBank.kafka.dto;
 
-import com.lezztto.LmfBank.account.domain.entity.AccountType;
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
+import com.lezztto.LmfBank.account.domain.enums.AccountType;
 import com.lezztto.LmfBank.account.domain.entity.Nationality;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,4 +43,6 @@ public class AccountEvent {
     private Boolean acceptedTerms;
 
     private LocalDateTime createdAt;
+
+    private AccountStatus accountStatus;
 }

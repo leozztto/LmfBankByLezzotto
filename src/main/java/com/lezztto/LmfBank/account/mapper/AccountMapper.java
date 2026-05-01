@@ -11,6 +11,8 @@ public interface AccountMapper {
 
     Account toAccount(AccountDto accountDto);
 
+    AccountDto toAccountDto(Account account);
+
     @AfterMapping
     default void mappingForAddress(@MappingTarget Account account) {
         if (account.getAddresses() != null) {

@@ -1,7 +1,8 @@
 package com.lezztto.LmfBank.account.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.lezztto.LmfBank.account.domain.entity.AccountType;
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
+import com.lezztto.LmfBank.account.domain.enums.AccountType;
 import com.lezztto.LmfBank.account.domain.entity.Nationality;
 import lombok.*;
 
@@ -48,4 +49,8 @@ public class AccountDto {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    private AccountStatus accountStatus;
+
+    private AccountBalanceDto accountBalanceDto;
 }
