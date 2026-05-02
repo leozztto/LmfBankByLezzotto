@@ -6,7 +6,10 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {
+        AddressMapper.class,
+        AccountBalanceMapper.class
+})
 public interface AccountMapper {
 
     Account toAccount(AccountDto accountDto);
@@ -14,9 +17,16 @@ public interface AccountMapper {
     AccountDto toAccountDto(Account account);
 
     @AfterMapping
-    default void mappingForAddress(@MappingTarget Account account) {
+    default void mappingRelations(@MappingTarget Account account) {
+
         if (account.getAddresses() != null) {
-            account.getAddresses().forEach(addr -> addr.setAccount(account));
+            account.getAddresses()
+                    .forEach(addr -> addr.setAccount(account));
+        }
+
+        if (account.getBalance() != null) {
+            account.getBalance()
+                    .setAccount(account);
         }
     }
 }

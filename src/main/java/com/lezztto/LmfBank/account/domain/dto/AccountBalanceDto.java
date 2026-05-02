@@ -11,8 +11,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class AccountBalanceDto {
 
-    private AccountDto account;
-
     private BigDecimal availableBalance;
 
     private BigDecimal blockedBalance;

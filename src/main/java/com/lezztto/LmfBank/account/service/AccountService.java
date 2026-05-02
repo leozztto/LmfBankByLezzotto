@@ -8,6 +8,7 @@ import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
 import com.lezztto.LmfBank.account.mapper.AccountMapper;
 import com.lezztto.LmfBank.account.repository.AccountRepository;
 import com.lezztto.LmfBank.account.util.AccountNumberGenerator;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,21 +24,27 @@ public class AccountService {
 
     private final AccountMapper accountMapper;
 
+    @Transactional
     public AccountDto create(AccountDto accountDto) throws DocumentNumberDuplicateException {
 
         validateDocumentNumber(accountDto.getDocumentNumber());
 
         accountDto.setAccountNumber(AccountNumberGenerator.generateAccountNumber());
 
-        log.info("Saving account : {}", accountDto.getAccountNumber());
-
         var accountEntity = accountMapper.toAccount(accountDto);
+
+        setAddressesForAccount(accountEntity);
 
         initializeBalances(accountEntity);
 
+        log.info("Saving account : {}", accountEntity.getAccountNumber());
+
         var account = accountRepository.save(accountEntity);
 
-        return accountMapper.toAccountDto(account);
+        var fullAccount = accountRepository.findByIdWithRelations(account.getId())
+                .orElseThrow();
+
+        return accountMapper.toAccountDto(fullAccount);
     }
 
     private void validateDocumentNumber(String documentNumber) {
@@ -45,6 +52,13 @@ public class AccountService {
             log.warn("Document already registered: {}", documentNumber);
 
             throw new DocumentNumberDuplicateException(documentNumber);
+        }
+    }
+
+    private void setAddressesForAccount(Account accountEntity){
+        if (accountEntity.getAddresses() != null) {
+            accountEntity.getAddresses()
+                    .forEach(a -> a.setAccount(accountEntity));
         }
     }
 
@@ -65,7 +79,7 @@ public class AccountService {
 
         log.info("Finding account by id: {}", accountId);
 
-        var account =  accountRepository.findById(accountId)
+        var account =  accountRepository.findByIdWithRelations(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
 
@@ -76,7 +90,7 @@ public class AccountService {
 
         log.info("Finding account by document number: {}", documentNumber);
 
-        var account = accountRepository.findByDocumentNumber(documentNumber)
+        var account = accountRepository.findByDocumentNumberWithRelations(documentNumber)
                 .orElseThrow(() -> new AccountNotFoundException(documentNumber));
 
         return accountMapper.toAccountDto(account);

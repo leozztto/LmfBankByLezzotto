@@ -53,5 +53,5 @@ public class AccountDto {
 
     private AccountStatus accountStatus;
 
-    private AccountBalanceDto accountBalanceDto;
+    private AccountBalanceDto balance;
 }
