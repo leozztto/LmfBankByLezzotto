@@ -35,3 +35,5 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_CONFIG_LOCATION: classpath:/application.yaml,classpath:/application-docker.yaml
+      JWT_SECRET: minha-chave-super-secreta-minimo-32-caracteres
+      JWT_EXPIRATION: 86400000
