@@ -23,6 +23,7 @@ public class AccountDto {
 
     private String documentNumber;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime birthDate;
 
     private String motherName;
@@ -47,7 +48,7 @@ public class AccountDto {
 
     private Boolean acceptedTerms;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
     private AccountStatus accountStatus;

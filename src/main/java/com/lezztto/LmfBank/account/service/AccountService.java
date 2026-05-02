@@ -25,42 +25,40 @@ public class AccountService {
 
     public AccountDto create(AccountDto accountDto) throws DocumentNumberDuplicateException {
 
+        validateDocumentNumber(accountDto.getDocumentNumber());
+
+        accountDto.setAccountNumber(AccountNumberGenerator.generateAccountNumber());
+
+        log.info("Saving account : {}", accountDto.getAccountNumber());
+
         var accountEntity = accountMapper.toAccount(accountDto);
 
-        validateDocumentNumber(accountEntity);
-
-        accountEntity.getAddresses().forEach(address -> address.setAccount(accountEntity));
-
-        accountEntity.setAccountNumber(AccountNumberGenerator.generateAccountNumber());
-
-        initializeBalance(accountEntity);
-
-        log.info("Saving account : {}", accountEntity.getAccountNumber());
+        initializeBalances(accountEntity);
 
         var account = accountRepository.save(accountEntity);
 
         return accountMapper.toAccountDto(account);
     }
 
-    private void validateDocumentNumber(Account account) {
-        if (accountRepository.existsByDocumentNumber(account.getDocumentNumber())) {
-            log.warn("Document already registered: {}", account.getDocumentNumber());
+    private void validateDocumentNumber(String documentNumber) {
+        if (accountRepository.existsByDocumentNumber(documentNumber)) {
+            log.warn("Document already registered: {}", documentNumber);
 
-            throw new DocumentNumberDuplicateException(account.getDocumentNumber());
+            throw new DocumentNumberDuplicateException(documentNumber);
         }
     }
 
-    private void initializeBalance(Account account) {
+    private void initializeBalances(Account account) {
 
         log.info("Generating balances");
 
-        var balance = AccountBalance.builder()
+        var balances = AccountBalance.builder()
                 .availableBalance(BigDecimal.ZERO)
                 .blockedBalance(BigDecimal.ZERO)
                 .totalBalance(BigDecimal.ZERO)
                 .build();
 
-        account.addBalance(balance);
+        account.addBalance(balances);
     }
 
     public AccountDto findById(Long accountId) {

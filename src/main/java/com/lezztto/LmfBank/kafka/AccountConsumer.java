@@ -30,6 +30,11 @@ public class AccountConsumer {
     )
     public void consume(AccountEvent accountEvent, Acknowledgment ack) {
 
+        if (accountEvent == null) {
+            log.warn("Null event received. Ignoring...");
+            return;
+        }
+
         log.info("Received event: {}", accountEvent.getEventId());
 
         try {

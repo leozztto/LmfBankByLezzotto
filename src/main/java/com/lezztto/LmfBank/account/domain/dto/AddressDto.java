@@ -10,8 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 public class AddressDto {
 
-    private AccountDto account;
-
     private String zipCode;
 
     private String street;

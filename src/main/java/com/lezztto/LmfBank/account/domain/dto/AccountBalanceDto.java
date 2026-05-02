@@ -13,5 +13,9 @@ public class AccountBalanceDto {
 
     private AccountDto account;
 
-    private BigDecimal balance;
+    private BigDecimal availableBalance;
+
+    private BigDecimal blockedBalance;
+
+    private BigDecimal totalBalance;
 }
