@@ -41,10 +41,7 @@ public class AccountService {
 
         var account = accountRepository.save(accountEntity);
 
-        var fullAccount = accountRepository.findByIdWithRelations(account.getId())
-                .orElseThrow();
-
-        return accountMapper.toAccountDto(fullAccount);
+        return accountMapper.toAccountDto(account);
     }
 
     private void validateDocumentNumber(String documentNumber) {
