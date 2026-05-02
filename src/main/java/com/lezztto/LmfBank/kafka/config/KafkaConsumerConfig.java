@@ -1,6 +1,7 @@
 package com.lezztto.LmfBank.kafka.config;
 
 import com.lezztto.LmfBank.kafka.dto.AccountEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,10 +12,12 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Configuration
 public class KafkaConsumerConfig {
 
@@ -47,6 +50,13 @@ public class KafkaConsumerConfig {
         factory.setConcurrency(3);
 
         return factory;
+    }
+
+    @Bean
+    public DefaultErrorHandler errorHandler() {
+        return new DefaultErrorHandler((record, exception) -> {
+            log.error("Kafka message skipped: {}", exception.getMessage());
+        });
     }
 
     private Map<String, Object> consumerConfigs() {

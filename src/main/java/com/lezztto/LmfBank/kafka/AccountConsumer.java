@@ -31,7 +31,7 @@ public class AccountConsumer {
     public void consume(AccountEvent accountEvent, Acknowledgment ack) {
 
         if (accountEvent == null) {
-            log.warn("Null event received. Ignoring...");
+            log.warn("Received null or invalid Kafka message, skipping");
             return;
         }
 
