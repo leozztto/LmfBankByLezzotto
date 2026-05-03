@@ -1,4 +1,4 @@
-package com.lezztto.LmfBank.account.config;
+package com.lezztto.LmfBank.config;
 
 import com.lezztto.LmfBank.auth.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;

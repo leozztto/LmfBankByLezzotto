@@ -1,8 +1,6 @@
 package com.lezztto.LmfBank.kafka.event.service;
 
-import com.lezztto.LmfBank.kafka.event.domain.dto.ProcessedEventDto;
 import com.lezztto.LmfBank.kafka.event.domain.entity.ProcessedEvent;
-import com.lezztto.LmfBank.kafka.event.domain.mapper.ProcessedEventMapper;
 import com.lezztto.LmfBank.kafka.event.repository.ProcessedEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,26 +15,19 @@ public class ProcessedEventService {
 
     private final ProcessedEventRepository processedEventRepository;
 
-    private final ProcessedEventMapper processedEventMapper;
+    public void markAsProcessed(String eventId) {
 
-    public void markAsProcessed(ProcessedEventDto processedEventDto) {
+        log.info("Saving event: {}", eventId);
 
-        var processedEvent = processedEventMapper.toProcessedEvent(processedEventDto);
-
-        log.info("Saving event: {}", processedEvent.getEventId());
-
-        processedEventRepository.save(processedEvent);
-
+        processedEventRepository.save(
+                ProcessedEvent.builder()
+                        .eventId(eventId)
+                        .processedAt(LocalDateTime.now())
+                        .build()
+        );
     }
 
-    public boolean tryProcess(ProcessedEventDto processedEventDto) {
-        try {
-            processedEventRepository.save(
-                    new ProcessedEvent(processedEventDto.getEventId(), LocalDateTime.now())
-            );
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    public boolean alreadyProcessed(String eventId) {
+        return processedEventRepository.existsById(eventId);
     }
 }

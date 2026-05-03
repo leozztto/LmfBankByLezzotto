@@ -3,10 +3,11 @@ package com.lezztto.LmfBank.account.domain.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.domain.enums.AccountType;
-import com.lezztto.LmfBank.account.domain.entity.Nationality;
+import com.lezztto.LmfBank.account.domain.enums.Nationality;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,8 +24,8 @@ public class AccountDto {
 
     private String documentNumber;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime birthDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthDate;
 
     private String motherName;
 

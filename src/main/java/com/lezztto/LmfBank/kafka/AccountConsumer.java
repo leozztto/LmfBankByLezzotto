@@ -1,28 +1,19 @@
 package com.lezztto.LmfBank.kafka;
 
-import com.lezztto.LmfBank.kafka.event.domain.dto.ProcessedEventDto;
 import com.lezztto.LmfBank.kafka.dto.AccountEvent;
-import com.lezztto.LmfBank.kafka.mapper.AccountEventMapper;
-import com.lezztto.LmfBank.kafka.event.service.ProcessedEventService;
-import com.lezztto.LmfBank.account.service.AccountService;
+import com.lezztto.LmfBank.kafka.event.service.AccountEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class AccountConsumer {
 
-    private final AccountService accountService;
-
-    private final AccountEventMapper accountEventMapper;
-
-    private final ProcessedEventService processedEventService;
+    private final AccountEventService accountEventService;
 
     @KafkaListener(
             topics = "account-create",
@@ -38,20 +29,12 @@ public class AccountConsumer {
         log.info("Received event: {}", accountEvent.getEventId());
 
         try {
-            var processedEventDto = new ProcessedEventDto(accountEvent.getEventId(), LocalDateTime.now());
-            if (!processedEventService.tryProcess(processedEventDto)) {
-                return;
-            }
-
-            var account = accountEventMapper.eventToDto(accountEvent);
-            accountService.create(account);
-
-            processedEventService.markAsProcessed(processedEventDto);
-
+            accountEventService.process(accountEvent);
             ack.acknowledge();
 
         } catch (Exception e) {
-            log.error("Error processing event: {}", accountEvent, e);
+
+            log.error("Error processing event: {}", accountEvent.getEventId(), e);
             throw e;
         }
     }

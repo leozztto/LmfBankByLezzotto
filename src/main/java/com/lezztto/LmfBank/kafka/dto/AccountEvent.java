@@ -2,11 +2,12 @@ package com.lezztto.LmfBank.kafka.dto;
 
 import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.domain.enums.AccountType;
-import com.lezztto.LmfBank.account.domain.entity.Nationality;
+import com.lezztto.LmfBank.account.domain.enums.Nationality;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class AccountEvent {
 
     private String documentNumber;
 
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
 
     private String motherName;
 

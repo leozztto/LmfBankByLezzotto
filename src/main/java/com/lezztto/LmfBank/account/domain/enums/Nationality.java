@@ -1,4 +1,4 @@
-package com.lezztto.LmfBank.account.domain.entity;
+package com.lezztto.LmfBank.account.domain.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -27,6 +27,8 @@ public enum Nationality {
 
     @JsonCreator
     public static Nationality fromCode(String code) {
+        if (code == null) return null;
+
         for (Nationality n : values()) {
             if (n.code.equalsIgnoreCase(code)) {
                 return n;

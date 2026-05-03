@@ -28,6 +28,8 @@ public enum AddressType {
 
     @JsonCreator
     public static AddressType fromCode(String code) {
+        if (code == null) return null;
+
         for (AddressType type : values()) {
             if (type.code.equalsIgnoreCase(code)) {
                 return type;

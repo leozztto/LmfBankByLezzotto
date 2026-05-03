@@ -1,7 +1,7 @@
 package com.lezztto.LmfBank.account.controller;
 
 import com.lezztto.LmfBank.account.domain.dto.AccountDto;
-import com.lezztto.LmfBank.account.domain.entity.Account;
+import com.lezztto.LmfBank.account.domain.response.AccountResponse;
 import com.lezztto.LmfBank.account.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,18 +17,18 @@ public class AccountController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AccountDto create(@RequestBody @Valid AccountDto accountDto) {
+    public AccountResponse create(@RequestBody @Valid AccountDto accountDto) {
 
         return accountService.create(accountDto);
     }
 
     @GetMapping("/{id}")
-    public AccountDto findById(@PathVariable Long id) {
+    public AccountResponse findById(@PathVariable Long id) {
         return accountService.findById(id);
     }
 
     @GetMapping("/document/{documentNumber}")
-    public AccountDto findByDocumentNumber(
+    public AccountResponse findByDocumentNumber(
             @PathVariable String documentNumber) {
 
         return accountService.findByDocumentNumber(documentNumber);

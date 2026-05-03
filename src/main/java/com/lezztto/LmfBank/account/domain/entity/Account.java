@@ -2,12 +2,14 @@ package com.lezztto.LmfBank.account.domain.entity;
 
 import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.domain.enums.AccountType;
+import com.lezztto.LmfBank.account.domain.enums.Nationality;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,7 @@ public class Account {
     private String documentNumber;
 
     @Column(nullable = false)
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
 
     @Column(nullable = false)
     private String motherName;
@@ -74,7 +76,7 @@ public class Account {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

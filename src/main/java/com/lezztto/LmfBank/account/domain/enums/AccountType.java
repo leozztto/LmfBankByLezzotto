@@ -1,6 +1,7 @@
 package com.lezztto.LmfBank.account.domain.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AccountType {
 
@@ -15,6 +16,7 @@ public enum AccountType {
         this.description = description;
     }
 
+    @JsonValue
     public String getCode() {
         return code;
     }
@@ -25,6 +27,8 @@ public enum AccountType {
 
     @JsonCreator
     public static AccountType fromCode(String code) {
+        if (code == null) return null;
+
         for (AccountType type : values()) {
             if (type.code.equalsIgnoreCase(code)) {
                 return type;
