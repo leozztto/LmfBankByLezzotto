@@ -94,6 +94,12 @@ public class AccountService {
         return accountMapper.toAccountResponse(account);
     }
 
+    public Account findByIdAccount(Long accountId){
+
+        return accountRepository.findByIdWithRelations(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
     public AccountResponse findByDocumentNumber(String documentNumber) {
 
         log.info("Finding account by document number: {}", documentNumber);

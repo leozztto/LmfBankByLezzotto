@@ -33,10 +33,10 @@ public class WithdrawService {
 
         log.info("Processing transaction of type: {}", TransactionType.DEBIT.name());
 
-        var account = accountService.findById(transactionRequest.getAccountId());
+        var account = accountService.findByIdAccount(transactionRequest.getAccountId());
         var accountBalance = account.getBalance();
 
-        accountValidator.validateForTransaction(account.getAccountId(), account.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(transactionRequest.getAccountId(), account.getAccountStatus().name());
 
         if (accountBalance.getAvailableBalance()
                 .compareTo(transactionRequest.getAmount()) < 0) {

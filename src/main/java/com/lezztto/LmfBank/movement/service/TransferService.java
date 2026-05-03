@@ -47,8 +47,8 @@ public class TransferService {
         var fromAccount = accountService.findById(transferRequest.getFromAccountId());
         var toAccount = accountService.findById(transferRequest.getToAccountId());
 
-        accountValidator.validateForTransaction(fromAccount.getAccountId(), fromAccount.getAccountStatus().name());
-        accountValidator.validateForTransaction(toAccount.getAccountId(), toAccount.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(fromAccount.getAccountId(), fromAccount.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(toAccount.getAccountId(), toAccount.getAccountStatus().name());
 
         var fromBalance = fromAccount.getBalance();
         var toBalance = toAccount.getBalance();

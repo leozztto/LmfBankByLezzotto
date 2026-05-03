@@ -11,7 +11,7 @@ import java.util.Objects;
 @Component
 public class AccountValidator {
 
-    public void validateForTransaction(Long accountId, String accountStatus) {
+    public void validateStatusAccountForTransaction(Long accountId, String accountStatus) {
 
         log.info("Validating status of accounnt: {}", accountId);
 

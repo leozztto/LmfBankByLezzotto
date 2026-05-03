@@ -32,9 +32,9 @@ public class DepositService {
 
         log.info("Transaction of type: {}", TransactionType.CREDIT.name());
 
-        var account = accountService.findById(transactionRequest.getAccountId());
+        var account = accountService.findByIdAccount(transactionRequest.getAccountId());
 
-        accountValidator.validateForTransaction(account.getAccountId(), account.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(transactionRequest.getAccountId(), account.getAccountStatus().name());
 
         var accountBalance = account.getBalance();
 
