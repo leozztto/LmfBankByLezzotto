@@ -1,0 +1,14 @@
+package com.lezztto.LmfBank.movement.repository;
+
+import com.lezztto.LmfBank.movement.domain.entity.Transfer;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface TransferRepository extends JpaRepository<Transfer, UUID> {
+
+    Optional<Transfer> findByIdempotencyKey(UUID idempotencyKey);
+
+    boolean existsByIdempotencyKey(UUID idempotencyKey);
+}

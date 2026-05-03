@@ -9,7 +9,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transfer")
+@Table(
+        name = "transfer",
+        indexes = {
+                @Index(name = "idx_transfer_from_account", columnList = "from_account_id"),
+                @Index(name = "idx_transfer_to_account", columnList = "to_account_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,8 +36,15 @@ public class Transfer {
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TransactionStatus status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "idempotency_key", unique = true)
+    private UUID idempotencyKey;
+
+    @Column(name = "failure_reason")
+    private String failureReason;
 }
