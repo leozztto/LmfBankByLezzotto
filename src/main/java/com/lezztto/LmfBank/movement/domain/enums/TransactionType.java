@@ -5,8 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum TransactionType {
 
     CREDIT("C", "Credito"),
-    DEBIT("D", "Debito"),
-    TRANSFER("T", "Transfer");
+    DEBIT("D", "Debito");
 
     private final String code;
     private final String description;
@@ -26,6 +25,8 @@ public enum TransactionType {
 
     @JsonCreator
     public static TransactionType fromCode(String code) {
+        if (code == null) return null;
+
         for (TransactionType type : values()) {
             if (type.code.equalsIgnoreCase(code)) {
                 return type;

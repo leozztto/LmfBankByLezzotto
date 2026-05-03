@@ -26,6 +26,8 @@ public enum TransactionStatus {
 
     @JsonCreator
     public static TransactionStatus fromCode(String code) {
+        if (code == null) return null;
+
         for (TransactionStatus status : values()) {
             if (status.code.equalsIgnoreCase(code)) {
                 return status;

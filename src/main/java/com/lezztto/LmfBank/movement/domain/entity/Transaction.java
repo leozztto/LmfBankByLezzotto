@@ -10,7 +10,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transaction")
+@Table(
+        name = "transaction",
+        indexes = {
+                @Index(name = "idx_transaction_account_created_at", columnList = "account_id, created_at"),
+                @Index(name = "idx_transaction_transfer_id", columnList = "transfer_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,6 +41,7 @@ public class Transaction {
     @Column(nullable = false)
     private TransactionStatus status;
 
+    @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)
@@ -42,4 +49,7 @@ public class Transaction {
 
     @Column(name = "transfer_id")
     private UUID transferId;
+
+    @Column(nullable = false, unique = true)
+    private UUID idempotencyKey;
 }
