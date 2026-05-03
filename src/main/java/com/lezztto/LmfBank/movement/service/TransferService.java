@@ -104,6 +104,7 @@ public class TransferService {
                     .description("Transfer to account " + transferRequest.getToAccountId())
                     .createdAt(LocalDateTime.now())
                     .transferId(transfer.getId())
+                    .idempotencyKey(transferRequest.getIdempotencyKey())
                     .build();
 
             log.info("Generate transaction CREDIT to account: {}", toAccount.getAccountId());
@@ -117,6 +118,7 @@ public class TransferService {
                     .description("Transfer from account " + transferRequest.getFromAccountId())
                     .createdAt(LocalDateTime.now())
                     .transferId(transfer.getId())
+                    .idempotencyKey(transferRequest.getIdempotencyKey())
                     .build();
 
             transactionRepository.save(debitTransaction);
