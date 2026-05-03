@@ -1,13 +1,17 @@
 package com.lezztto.LmfBank.movement.service;
 
+import com.lezztto.LmfBank.account.domain.entity.Account;
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.service.AccountService;
 import com.lezztto.LmfBank.movement.domain.response.TransactionResponse;
 import com.lezztto.LmfBank.movement.domain.request.TransactionRequest;
 import com.lezztto.LmfBank.movement.domain.entity.Transaction;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionStatus;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionType;
+import com.lezztto.LmfBank.movement.exception.AccountStatusException;
 import com.lezztto.LmfBank.movement.mapper.TransactionMapper;
 import com.lezztto.LmfBank.movement.repository.TransactionRepository;
+import com.lezztto.LmfBank.movement.util.AccountValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +26,14 @@ public class DepositService {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final TransactionMapper transactionMapper;
+    private final AccountValidator accountValidator;
 
     @Transactional
     public TransactionResponse process(TransactionRequest request) {
 
         var account = accountService.findById(request.getAccountId());
+
+        accountValidator.validateForTransaction(account.getId(), account.getAccountStatus().name());
 
         var accountBalance = account.getBalance();
 

@@ -9,6 +9,7 @@ import com.lezztto.LmfBank.movement.domain.enums.TransactionType;
 import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
 import com.lezztto.LmfBank.movement.mapper.TransactionMapper;
 import com.lezztto.LmfBank.movement.repository.TransactionRepository;
+import com.lezztto.LmfBank.movement.util.AccountValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,12 +24,15 @@ public class WithdrawService {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final TransactionMapper transactionMapper;
+    private final AccountValidator accountValidator;
 
     @Transactional
     public TransactionResponse process(TransactionRequest transactionRequest) {
 
         var account = accountService.findById(transactionRequest.getAccountId());
         var accountBalance = account.getBalance();
+
+        accountValidator.validateForTransaction(account.getId(), account.getAccountStatus().name());
 
         if (accountBalance.getAvailableBalance()
                 .compareTo(transactionRequest.getAmount()) < 0) {

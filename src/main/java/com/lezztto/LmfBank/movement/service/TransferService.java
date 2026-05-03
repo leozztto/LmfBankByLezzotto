@@ -11,10 +11,12 @@ import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
 import com.lezztto.LmfBank.movement.mapper.TransferMapper;
 import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import com.lezztto.LmfBank.movement.repository.TransferRepository;
+import com.lezztto.LmfBank.movement.util.AccountValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -26,6 +28,7 @@ public class TransferService {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final TransferMapper transferMapper;
+    private final AccountValidator accountValidator;
 
     @Transactional
     public TransferResponse createTransfer(TransferRequest transferRequest) {
@@ -39,6 +42,9 @@ public class TransferService {
 
         var fromAccount = accountService.findById(transferRequest.getFromAccountId());
         var toAccount = accountService.findById(transferRequest.getToAccountId());
+
+        accountValidator.validateForTransaction(fromAccount.getId(), fromAccount.getAccountStatus().name());
+        accountValidator.validateForTransaction(toAccount.getId(), toAccount.getAccountStatus().name());
 
         var fromBalance = fromAccount.getBalance();
         var toBalance = toAccount.getBalance();
@@ -135,7 +141,7 @@ public class TransferService {
 
     private void validateSufficientBalance(
             TransferRequest transferRequest,
-            java.math.BigDecimal availableBalance
+            BigDecimal availableBalance
     ) {
 
         if (transferRequest.getAmount().compareTo(availableBalance) > 0) {
