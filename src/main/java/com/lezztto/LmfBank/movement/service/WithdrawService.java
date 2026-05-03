@@ -12,11 +12,13 @@ import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import com.lezztto.LmfBank.movement.util.AccountValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WithdrawService {
@@ -29,10 +31,12 @@ public class WithdrawService {
     @Transactional
     public TransactionResponse process(TransactionRequest transactionRequest) {
 
+        log.info("Processing transaction of type: {}", TransactionType.DEBIT.name());
+
         var account = accountService.findById(transactionRequest.getAccountId());
         var accountBalance = account.getBalance();
 
-        accountValidator.validateForTransaction(account.getId(), account.getAccountStatus().name());
+        accountValidator.validateForTransaction(account.getAccountId(), account.getAccountStatus().name());
 
         if (accountBalance.getAvailableBalance()
                 .compareTo(transactionRequest.getAmount()) < 0) {
@@ -49,6 +53,8 @@ public class WithdrawService {
                         .subtract(transactionRequest.getAmount())
         );
 
+        log.info("Generate transaction for account: {}", transactionRequest.getAccountId());
+
         Transaction transaction = Transaction.builder()
                 .id(UUID.randomUUID())
                 .accountId(transactionRequest.getAccountId())
@@ -61,6 +67,8 @@ public class WithdrawService {
                 .build();
 
         var transactionEntity = transactionRepository.save(transaction);
+
+        log.info("Transaction of DEBIT completed successfully - code: {}", transaction.getId());
 
         return transactionMapper.toResponse(transactionEntity);
     }

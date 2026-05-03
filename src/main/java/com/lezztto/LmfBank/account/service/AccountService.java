@@ -27,9 +27,13 @@ public class AccountService {
     @Transactional
     public AccountResponse create(AccountDto accountDto) throws DocumentNumberDuplicateException {
 
+        log.info("Initializing new account registration");
+
         validateDocumentNumber(accountDto.getDocumentNumber());
 
         accountDto.setAccountNumber(AccountNumberGenerator.generateAccountNumber());
+
+        log.info("mapping account data to the document : {}", accountDto.getDocumentNumber());
 
         var accountEntity = accountMapper.toAccount(accountDto);
 
@@ -37,9 +41,9 @@ public class AccountService {
 
         initializeBalances(accountEntity);
 
-        log.info("Saving account : {}", accountEntity.getAccountNumber());
-
         var account = accountRepository.save(accountEntity);
+
+        log.info("Account: {} generated for documentNumber: {}", account.getAccountNumber(), account.getDocumentNumber());
 
         return accountMapper.toAccountResponse(account);
     }

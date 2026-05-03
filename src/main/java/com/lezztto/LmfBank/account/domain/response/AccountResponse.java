@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class AccountResponse {
 
-    private Long id;
+    private Long accountId;
 
     private String fullName;
 

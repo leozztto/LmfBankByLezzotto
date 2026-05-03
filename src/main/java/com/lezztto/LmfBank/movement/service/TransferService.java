@@ -13,6 +13,7 @@ import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import com.lezztto.LmfBank.movement.repository.TransferRepository;
 import com.lezztto.LmfBank.movement.util.AccountValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransferService {
@@ -33,6 +35,8 @@ public class TransferService {
     @Transactional
     public TransferResponse createTransfer(TransferRequest transferRequest) {
 
+        log.info("Transaction of type: TRANSFER");
+
         var existingTransfer = validateIdempotency(transferRequest.getIdempotencyKey());
 
         if (existingTransfer != null)
@@ -43,13 +47,17 @@ public class TransferService {
         var fromAccount = accountService.findById(transferRequest.getFromAccountId());
         var toAccount = accountService.findById(transferRequest.getToAccountId());
 
-        accountValidator.validateForTransaction(fromAccount.getId(), fromAccount.getAccountStatus().name());
-        accountValidator.validateForTransaction(toAccount.getId(), toAccount.getAccountStatus().name());
+        accountValidator.validateForTransaction(fromAccount.getAccountId(), fromAccount.getAccountStatus().name());
+        accountValidator.validateForTransaction(toAccount.getAccountId(), toAccount.getAccountStatus().name());
 
         var fromBalance = fromAccount.getBalance();
         var toBalance = toAccount.getBalance();
 
+        log.info("Validate balance of account: {}", fromAccount.getAccountId());
+
         validateSufficientBalance(transferRequest, fromBalance.getAvailableBalance());
+
+        log.info("Generate transfer for account: {}", fromAccount.getAccountId());
 
         Transfer transfer = Transfer.builder()
                 .id(UUID.randomUUID())
@@ -85,6 +93,8 @@ public class TransferService {
                             .add(toBalance.getBlockedBalance())
             );
 
+            log.info("Generate transaction DEBIT to account: {}", fromAccount.getAccountId());
+
             Transaction debitTransaction = Transaction.builder()
                     .id(UUID.randomUUID())
                     .accountId(transferRequest.getFromAccountId())
@@ -95,6 +105,8 @@ public class TransferService {
                     .createdAt(LocalDateTime.now())
                     .transferId(transfer.getId())
                     .build();
+
+            log.info("Generate transaction CREDIT to account: {}", toAccount.getAccountId());
 
             Transaction creditTransaction = Transaction.builder()
                     .id(UUID.randomUUID())
@@ -119,6 +131,8 @@ public class TransferService {
 
             throw e;
         }
+
+        log.info("Transaction of TRANSFER completed successfully - code: {}", transfer.getId());
 
         return transferMapper.toTransferResponse(transfer);
     }
