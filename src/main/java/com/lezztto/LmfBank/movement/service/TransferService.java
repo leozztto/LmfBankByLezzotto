@@ -69,8 +69,6 @@ public class TransferService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        transferRepository.save(transfer);
-
         try {
 
             transactionDomainService.create(
@@ -90,6 +88,8 @@ public class TransferService {
             );
 
             transfer.setStatus(TransactionStatus.COMPLETED);
+
+            transferRepository.save(transfer);
 
             balanceProjectionService.refresh(fromAccount.getId());
 
