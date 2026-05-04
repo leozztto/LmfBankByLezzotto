@@ -1,16 +1,27 @@
 package com.lezztto.LmfBank.exception.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
+@Schema(description = "Standard API error response")
+@Data
 @Builder
 public class ApiError {
-    private int status;
+
+    @Schema(example = "400")
+    private Integer status;
+
+    @Schema(example = "INSUFFICIENT_BALANCE")
     private String code;
+
+    @Schema(example = "Insufficient balance for transaction")
     private String message;
+
+    @Schema(example = "/transfers")
     private String path;
+
     private LocalDateTime timestamp;
 }
