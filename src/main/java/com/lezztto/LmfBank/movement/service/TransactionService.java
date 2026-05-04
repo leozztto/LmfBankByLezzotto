@@ -1,6 +1,5 @@
 package com.lezztto.LmfBank.movement.service;
 
-import com.lezztto.LmfBank.movement.domain.entity.Transaction;
 import com.lezztto.LmfBank.movement.domain.response.TransactionResponse;
 import com.lezztto.LmfBank.movement.domain.request.TransactionRequest;
 import com.lezztto.LmfBank.movement.exception.TransactionTypeException;
@@ -8,8 +7,6 @@ import com.lezztto.LmfBank.movement.mapper.TransactionMapper;
 import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,15 +19,12 @@ public class TransactionService {
 
     public TransactionResponse create(TransactionRequest transactionRequest) {
 
-        var existingTransaction = validateIdempotency(
-                transactionRequest.getIdempotencyKey()
-        );
+        return transactionRepository.findByIdempotencyKey(transactionRequest.getIdempotencyKey())
+                .map(transactionMapper::toResponse)
+                .orElseGet(() -> process(transactionRequest));
+    }
 
-        if (existingTransaction != null) {
-            return transactionMapper.toResponse(
-                    existingTransaction
-            );
-        }
+    private TransactionResponse process(TransactionRequest transactionRequest) {
 
         return switch (transactionRequest.getType()) {
 
@@ -40,12 +34,5 @@ public class TransactionService {
 
             default -> throw new TransactionTypeException(transactionRequest.getType());
         };
-    }
-
-    private Transaction validateIdempotency(UUID idempotencyKey) {
-
-        return transactionRepository
-                .findByIdempotencyKey(idempotencyKey)
-                .orElse(null);
     }
 }

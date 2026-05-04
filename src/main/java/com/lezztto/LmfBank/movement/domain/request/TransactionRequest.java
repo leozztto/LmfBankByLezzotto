@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -30,5 +29,5 @@ public class TransactionRequest {
     private String description;
 
     @NotNull
-    private UUID idempotencyKey;
+    private String idempotencyKey;
 }

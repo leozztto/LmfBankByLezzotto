@@ -3,13 +3,12 @@ package com.lezztto.LmfBank.movement.service;
 import com.lezztto.LmfBank.account.service.AccountService;
 import com.lezztto.LmfBank.movement.domain.response.TransferResponse;
 import com.lezztto.LmfBank.movement.domain.request.TransferRequest;
-import com.lezztto.LmfBank.movement.domain.entity.Transaction;
 import com.lezztto.LmfBank.movement.domain.entity.Transfer;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionStatus;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionType;
 import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
+import com.lezztto.LmfBank.movement.idempotency.TransferIdempotencyService;
 import com.lezztto.LmfBank.movement.mapper.TransferMapper;
-import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import com.lezztto.LmfBank.movement.repository.TransferRepository;
 import com.lezztto.LmfBank.movement.util.AccountValidator;
 import lombok.RequiredArgsConstructor;
@@ -27,109 +26,81 @@ import java.util.UUID;
 public class TransferService {
 
     private final TransferRepository transferRepository;
-    private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final TransferMapper transferMapper;
     private final AccountValidator accountValidator;
+    private final TransferIdempotencyService idempotencyService;
+    private final TransactionDomainService transactionDomainService;
+    private final BalanceCalculatorService balanceCalculatorService;
+    private final BalanceProjectionService balanceProjectionService;
 
     @Transactional
     public TransferResponse createTransfer(TransferRequest transferRequest) {
 
         log.info("Transaction of type: TRANSFER");
 
-        var existingTransfer = validateIdempotency(transferRequest.getIdempotencyKey());
-
-        if (existingTransfer != null)
-            return transferMapper.toTransferResponse(existingTransfer);
+        if (!idempotencyService.tryLock(transferRequest.getIdempotencyKey())) {
+            return transferMapper.toTransferResponse(idempotencyService.findByKey(transferRequest.getIdempotencyKey()));
+        }
 
         validateTransfer(transferRequest);
 
-        var fromAccount = accountService.findById(transferRequest.getFromAccountId());
-        var toAccount = accountService.findById(transferRequest.getToAccountId());
+        var fromAccount = accountService.findByIdAccount(transferRequest.getFromAccountId());
+        var toAccount = accountService.findByIdAccount(transferRequest.getToAccountId());
 
-        accountValidator.validateStatusAccountForTransaction(fromAccount.getAccountId(), fromAccount.getAccountStatus().name());
-        accountValidator.validateStatusAccountForTransaction(toAccount.getAccountId(), toAccount.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(fromAccount.getId(), fromAccount.getAccountStatus().name());
+        accountValidator.validateStatusAccountForTransaction(toAccount.getId(), toAccount.getAccountStatus().name());
 
-        var fromBalance = fromAccount.getBalance();
-        var toBalance = toAccount.getBalance();
+        var availableBalance = balanceCalculatorService.calculate(fromAccount.getId());
 
-        log.info("Validate balance of account: {}", fromAccount.getAccountId());
+        log.info("Validate balance of account: {}", fromAccount.getId());
 
-        validateSufficientBalance(transferRequest, fromBalance.getAvailableBalance());
+        validateSufficientBalance(transferRequest, availableBalance);
 
-        log.info("Generate transfer for account: {}", fromAccount.getAccountId());
+        log.info("Generate transfer for account: {}", fromAccount.getId());
 
         Transfer transfer = Transfer.builder()
                 .id(UUID.randomUUID())
-                .fromAccountId(transferRequest.getFromAccountId())
-                .toAccountId(transferRequest.getToAccountId())
+                .fromAccountId(fromAccount.getId())
+                .toAccountId(toAccount.getId())
                 .amount(transferRequest.getAmount())
                 .status(TransactionStatus.PENDING)
-                .createdAt(LocalDateTime.now())
                 .idempotencyKey(transferRequest.getIdempotencyKey())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         transferRepository.save(transfer);
 
         try {
 
-            fromBalance.setAvailableBalance(
-                    fromBalance.getAvailableBalance()
-                            .subtract(transferRequest.getAmount())
+            transactionDomainService.create(
+                    fromAccount.getId(),
+                    TransactionType.DEBIT,
+                    transferRequest.getAmount(),
+                    "Transfer to " + toAccount.getId(),
+                    transfer.getId()
             );
 
-            toBalance.setAvailableBalance(
-                    toBalance.getAvailableBalance()
-                            .add(transferRequest.getAmount())
+            transactionDomainService.create(
+                    toAccount.getId(),
+                    TransactionType.CREDIT,
+                    transferRequest.getAmount(),
+                    "Transfer from " + fromAccount.getId(),
+                    transfer.getId()
             );
-
-            fromBalance.setTotalBalance(
-                    fromBalance.getAvailableBalance()
-                            .add(fromBalance.getBlockedBalance())
-            );
-
-            toBalance.setTotalBalance(
-                    toBalance.getAvailableBalance()
-                            .add(toBalance.getBlockedBalance())
-            );
-
-            log.info("Generate transaction DEBIT to account: {}", fromAccount.getAccountId());
-
-            Transaction debitTransaction = Transaction.builder()
-                    .id(UUID.randomUUID())
-                    .accountId(transferRequest.getFromAccountId())
-                    .type(TransactionType.DEBIT)
-                    .amount(transferRequest.getAmount())
-                    .status(TransactionStatus.COMPLETED)
-                    .description("Transfer to account " + transferRequest.getToAccountId())
-                    .createdAt(LocalDateTime.now())
-                    .transferId(transfer.getId())
-                    .idempotencyKey(transferRequest.getIdempotencyKey())
-                    .build();
-
-            log.info("Generate transaction CREDIT to account: {}", toAccount.getAccountId());
-
-            Transaction creditTransaction = Transaction.builder()
-                    .id(UUID.randomUUID())
-                    .accountId(transferRequest.getToAccountId())
-                    .type(TransactionType.CREDIT)
-                    .amount(transferRequest.getAmount())
-                    .status(TransactionStatus.COMPLETED)
-                    .description("Transfer from account " + transferRequest.getFromAccountId())
-                    .createdAt(LocalDateTime.now())
-                    .transferId(transfer.getId())
-                    .idempotencyKey(transferRequest.getIdempotencyKey())
-                    .build();
-
-            transactionRepository.save(debitTransaction);
-            transactionRepository.save(creditTransaction);
 
             transfer.setStatus(TransactionStatus.COMPLETED);
+
+            balanceProjectionService.refresh(fromAccount.getId());
+
+            balanceProjectionService.refresh(toAccount.getId());
 
         } catch (Exception e) {
 
             transfer.setStatus(TransactionStatus.FAILED);
             transfer.setFailureReason(e.getMessage());
+
+            transferRepository.save(transfer);
 
             throw e;
         }
@@ -137,13 +108,6 @@ public class TransferService {
         log.info("Transaction of TRANSFER completed successfully - code: {}", transfer.getId());
 
         return transferMapper.toTransferResponse(transfer);
-    }
-
-    private Transfer validateIdempotency(UUID idempotencyKey) {
-
-        return transferRepository
-                .findByIdempotencyKey(idempotencyKey)
-                .orElse(null);
     }
 
     private void validateTransfer(TransferRequest transferRequest) {
@@ -155,10 +119,7 @@ public class TransferService {
         }
     }
 
-    private void validateSufficientBalance(
-            TransferRequest transferRequest,
-            BigDecimal availableBalance
-    ) {
+    private void validateSufficientBalance(TransferRequest transferRequest, BigDecimal availableBalance) {
 
         if (transferRequest.getAmount().compareTo(availableBalance) > 0) {
             throw new InsufficientBalanceException(

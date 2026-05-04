@@ -12,6 +12,9 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "transaction",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_transaction_idempotency", columnNames = "idempotency_key")
+        },
         indexes = {
                 @Index(name = "idx_transaction_account_created_at", columnList = "account_id, created_at"),
                 @Index(name = "idx_transaction_transfer_id", columnList = "transfer_id")
@@ -50,6 +53,6 @@ public class Transaction {
     @Column(name = "transfer_id")
     private UUID transferId;
 
-    @Column(nullable = false, unique = true)
-    private UUID idempotencyKey;
+    @Column(name = "idempotency_key", nullable = false, unique = true)
+    private String idempotencyKey;
 }
