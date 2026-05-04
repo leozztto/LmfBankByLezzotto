@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lmf-bank-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lmf-bank
+  template:
+    metadata:
+      labels:
+        app: lmf-bank
+    spec:
+      containers:
+        - name: lmf-bank
+          image: lmf-bank:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: kubernetes
+
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/lmf_bank
+
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: root
+
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: org.postgresql.Driver
+
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+
+            - name: JWT_SECRET
+              value: "minha-chave-super-secreta"

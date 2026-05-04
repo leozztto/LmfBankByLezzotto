@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lmf-bank
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/lmf_bank
+    username: postgres
+    password: root
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: kafka:9092
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.springframework.jdbc: debug
