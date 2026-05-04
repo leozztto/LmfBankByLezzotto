@@ -21,6 +21,8 @@ spring:
 
   kafka:
     bootstrap-servers: kafka:9092
+    consumer:
+      auto-offset-reset: earliest
 
 logging:
   level:

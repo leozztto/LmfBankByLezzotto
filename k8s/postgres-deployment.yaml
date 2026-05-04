@@ -25,3 +25,8 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: root
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 5
