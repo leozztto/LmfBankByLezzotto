@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lezztto.LmfBank.exception.domain.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper objectMapper;
 
     @Override
     public void commence(
@@ -29,9 +33,9 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        response.setStatus(401);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
 
-        new ObjectMapper().writeValue(response.getOutputStream(), error);
+        objectMapper.writeValue(response.getOutputStream(), error);
     }
 }

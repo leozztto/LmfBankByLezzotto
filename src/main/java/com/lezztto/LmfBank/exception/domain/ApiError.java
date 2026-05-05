@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.exception.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
@@ -23,5 +24,6 @@ public class ApiError {
     @Schema(example = "/transfers")
     private String path;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
 }

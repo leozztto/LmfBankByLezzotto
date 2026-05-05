@@ -1,7 +1,7 @@
 package com.lezztto.LmfBank.auth.filter;
 
 import com.lezztto.LmfBank.auth.service.JwtService;
-import io.jsonwebtoken.lang.Collections;
+import java.util.Collections;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +26,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+
+        if (request.getRequestURI().startsWith("/actuator")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader("Authorization");
 
