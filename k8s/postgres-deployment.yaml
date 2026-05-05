@@ -25,8 +25,14 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: root
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-data
           readinessProbe:
             tcpSocket:
               port: 5432
             initialDelaySeconds: 10
             periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          emptyDir: {}

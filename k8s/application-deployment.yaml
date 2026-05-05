@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: lmf-bank-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: lmf-bank
@@ -12,6 +12,19 @@ spec:
       labels:
         app: lmf-bank
     spec:
+
+      initContainers:
+        - name: wait-postgres
+          image: postgres:15
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -p 5432; do
+                echo waiting postgres;
+                sleep 2;
+              done
+
       containers:
         - name: lmf-bank
           image: lmf-bank:1.0
@@ -31,12 +44,13 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8080
-            failureThreshold: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
+            failureThreshold: 30
 
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: 8080
             periodSeconds: 5
             failureThreshold: 5

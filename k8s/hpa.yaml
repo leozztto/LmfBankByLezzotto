@@ -8,7 +8,7 @@ spec:
     kind: Deployment
     name: lmf-bank-app
 
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 10
 
   metrics:
