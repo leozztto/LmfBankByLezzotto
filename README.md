@@ -6,28 +6,28 @@
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326CE5?logo=kubernetes)
 ![JWT](https://img.shields.io/badge/JWT-Security-orange)
 
-# 💳 LMF Bank API
+# LMF Bank API
 
 Sistema bancário digital construído com foco em **consistência financeira, escalabilidade e segurança transacional**, utilizando arquitetura moderna baseada em **ledger + projection + event-driven design**.
 
 ---
 
-# 📌 Visão geral
+# Visão geral
 
 O projeto simula um sistema bancário completo com suporte a:
 
-- 🏦 Criação de contas
-- 💰 Depósitos (CREDIT)
-- 💸 Saques (DEBIT)
-- 🔁 Transferências entre contas
-- 📊 Consulta de saldo
-- 📜 Histórico de transações
+- Criação de contas
+- Depósitos (CREDIT)
+- Saques (DEBIT)
+- Transferências entre contas
+- Consulta de saldo
+- Histórico de transações
 
 ---
 
-# 🔄 Fluxos principais
+# Fluxos principais
 
-## 💰 Depósito (CREDIT)
+## Depósito (CREDIT)
 
 - Validação da conta
 - Criação da transação
@@ -35,7 +35,7 @@ O projeto simula um sistema bancário completo com suporte a:
 
 ---
 
-## 💸 Saque (DEBIT)
+## Saque (DEBIT)
 
 - Validação da conta
 - Cálculo de saldo disponível
@@ -45,7 +45,7 @@ O projeto simula um sistema bancário completo com suporte a:
 
 ---
 
-## 🔁 Transferência
+## Transferência
 
 - Validação das contas (origem e destino)
 - Validação de saldo da conta origem
@@ -57,7 +57,7 @@ O projeto simula um sistema bancário completo com suporte a:
 
 ---
 
-# 🧠 Idempotência
+# Idempotência
 
 Para evitar duplicidade de operações:
 
@@ -67,11 +67,11 @@ Para evitar duplicidade de operações:
 
 ---
 
-# 🔐 Segurança
+# Segurança
 
 Autenticação baseada em **JWT (JSON Web Token)**.
 
-## 🔑 Fluxo:
+## Fluxo:
 
 - Login gera token JWT
 - Token enviado via header:
@@ -80,11 +80,11 @@ Autenticação baseada em **JWT (JSON Web Token)**.
 
 ---
 
-# 📨 Kafka
+# Kafka
 
 Utilizado para processamento assíncrono de eventos de criação de conta.
 
-## ⚙️ Características:
+## ️ Características:
 
 - Consumer com ACK manual
 - Controle de duplicidade de eventos
@@ -92,9 +92,9 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
 
 ---
 
-# 🗄️ Banco de dados
+# Banco de dados
 
-## 📦 Entidades principais:
+## Entidades principais:
 
 - `Account`
 - `AccountBalance`
@@ -104,24 +104,24 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
 
 ---
 
-# 🧰 Tecnologias utilizadas
+# Tecnologias utilizadas
 
-- ☕ Java 17+
-- 🌱 Spring Boot
-- 🔐 Spring Security
-- 🗄️ Spring Data JPA
-- 📨 Apache Kafka
-- 🔑 JWT
-- 🧩 MapStruct
-- 🪶 Lombok
-- 📄 OpenAPI (Swagger)
-- 🐳 Docker
-- ☸️ Kubernetes
-- 🐘 PostgreSQL
+- Java 17+
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- Apache Kafka
+- JWT
+- MapStruct
+- Lombok
+- OpenAPI (Swagger)
+- Docker
+- Kubernetes
+- PostgreSQL
 
 ---
 
-# 🚀 Arquitetura
+# Arquitetura
 
 - Event-driven architecture
 - Ledger-based financial model
@@ -131,7 +131,7 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
 
 ---
 
-# 📈 Objetivo do projeto
+# Objetivo do projeto
 
 Simular um **core banking system simplificado**, com foco em:
 
