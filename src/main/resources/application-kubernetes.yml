@@ -26,5 +26,4 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.springframework.jdbc: debug
+    org.springframework.jdbc.datasource.DataSourceUtils: off

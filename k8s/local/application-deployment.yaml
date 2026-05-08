@@ -31,37 +31,6 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
-
-          resources:
-            requests:
-              cpu: "200m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-
-          startupProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 10
-            failureThreshold: 30
-
-          readinessProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: 8080
-            periodSeconds: 5
-            failureThreshold: 5
-
-          livenessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
-
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: kubernetes
@@ -75,11 +44,42 @@ spec:
             - name: SPRING_DATASOURCE_PASSWORD
               value: root
 
-            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-              value: org.postgresql.Driver
-
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
 
             - name: JWT_SECRET
-              value: "minha-chave-super-secreta"
+              value: minha-chave-super-secreta-com-mais-de-32-bytes-123456789
+
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6

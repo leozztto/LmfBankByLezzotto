@@ -27,7 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        if (request.getRequestURI().startsWith("/webjars")
+        if (request.getRequestURI().startsWith("/auth")
+                || request.getRequestURI().startsWith("/webjars")
                 || request.getRequestURI().startsWith("/actuator")
                 || request.getRequestURI().startsWith("/swagger-ui")
                 || request.getRequestURI().startsWith("/v3/api-docs")
