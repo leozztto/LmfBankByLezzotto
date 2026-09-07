@@ -87,7 +87,7 @@ class WithdrawServiceTest {
         Transaction persisted = persistedDebit(amount);
         TransactionResponse expected = TransactionResponse.builder().transactionId(persisted.getId()).build();
 
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("100.00"));
         when(transactionDomainService.create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), eq("Withdraw"), any(UUID.class)))
                 .thenReturn(persisted);
@@ -104,7 +104,7 @@ class WithdrawServiceTest {
     @DisplayName("valor exatamente igual ao saldo disponível é permitido")
     void shouldAllowWithdrawEqualToBalance() {
         BigDecimal amount = new BigDecimal("100.00");
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("100.00"));
         when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
                 .thenReturn(persistedDebit(amount));
@@ -118,7 +118,7 @@ class WithdrawServiceTest {
     @DisplayName("valor acima do saldo: lança InsufficientBalanceException e não gera transação nem atualiza projeção")
     void shouldRejectWithdrawAboveBalance() {
         BigDecimal amount = new BigDecimal("100.01");
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("100.00"));
 
         assertThatThrownBy(() -> withdrawService.process(debitRequest(amount)))
@@ -137,7 +137,7 @@ class WithdrawServiceTest {
     @Test
     @DisplayName("saldo negativo (conta já devedora): qualquer débito é rejeitado")
     void shouldRejectWithdrawWhenBalanceIsNegative() {
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("-5.00"));
 
         assertThatThrownBy(() -> withdrawService.process(debitRequest(new BigDecimal("0.01"))))
@@ -148,7 +148,7 @@ class WithdrawServiceTest {
     @DisplayName("valida o status da conta antes de checar saldo")
     void shouldValidateAccountStatusBeforeBalance() {
         Account closed = Account.builder().id(ACCOUNT_ID).accountStatus(AccountStatus.CLOSED).build();
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(closed);
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(closed);
         doThrow(new AccountStatusException(ACCOUNT_ID, AccountStatus.CLOSED.name()))
                 .when(accountValidator)
                 .validateStatusAccountForTransaction(ACCOUNT_ID, AccountStatus.CLOSED.name());
@@ -163,7 +163,7 @@ class WithdrawServiceTest {
     @Test
     @DisplayName("nunca gera transação de CRÉDITO no fluxo de saque")
     void shouldNeverCreateCredit() {
-        when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
+        when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("1000.00"));
         when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
                 .thenReturn(persistedDebit(BigDecimal.TEN));

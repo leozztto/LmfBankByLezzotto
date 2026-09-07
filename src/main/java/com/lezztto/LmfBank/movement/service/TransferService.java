@@ -45,7 +45,9 @@ public class TransferService {
 
         validateTransfer(transferRequest);
 
-        var fromAccount = accountService.findByIdAccount(transferRequest.getFromAccountId());
+        // Lock the source account for the whole transaction: concurrent transfers/withdrawals
+        // from the same account are serialized here, so the balance check below cannot race.
+        var fromAccount = accountService.findByIdAccountForUpdate(transferRequest.getFromAccountId());
         var toAccount = accountService.findByIdAccount(transferRequest.getToAccountId());
 
         accountValidator.validateStatusAccountForTransaction(fromAccount.getId(), fromAccount.getAccountStatus().name());
