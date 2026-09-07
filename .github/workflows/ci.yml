@@ -24,6 +24,12 @@ jobs:
       # without touching the code; the defaults match pom.xml.
       SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'leozztto_LmfBankByLezzotto' }}
       SONAR_ORG: ${{ vars.SONAR_ORG || 'leozztto' }}
+      # The single long-lived branch SonarCloud analyzes on the free plan (its
+      # "main branch"). Branch analysis of any OTHER branch needs a paid plan and
+      # fails with "Not authorized or project not found", so we only send branch
+      # analysis for pushes to this one. PR analysis works regardless.
+      # If you make `develop` the main branch in SonarCloud, set this to develop.
+      SONAR_ANALYZED_BRANCH: ${{ vars.SONAR_ANALYZED_BRANCH || 'main' }}
       # true only for pull requests opened from a fork, where secrets are
       # withheld by GitHub and SonarCloud analysis therefore cannot run.
       IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
@@ -57,9 +63,12 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Check SonarCloud configuration
-        # Fail loudly on our own branches/PRs if the token is missing, so a
-        # silently-skipped analysis can never masquerade as a passing check.
-        if: ${{ env.IS_FORK_PR != 'true' }}
+        # Fail loudly when SonarCloud analysis is expected but the token is
+        # missing, so a silently-skipped analysis can never look like a pass.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
         run: |
           if [ -z "$SONAR_TOKEN" ]; then
             echo "::error::SONAR_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
@@ -74,10 +83,14 @@ jobs:
         run: ./mvnw -B --no-transfer-progress verify
 
       - name: SonarCloud analysis
-        # Runs on every push and on same-repo PRs; skipped only for fork PRs.
-        # `qualitygate.wait` fails the job when the Quality Gate fails, e.g.
-        # coverage on new code below 80%.
-        if: ${{ env.IS_FORK_PR != 'true' }}
+        # PR analysis on every same-repo PR; branch analysis only for pushes to
+        # SONAR_ANALYZED_BRANCH (the free plan covers a single branch). Other
+        # branch pushes still get the full build/test/coverage above.
+        # `qualitygate.wait` fails the job when the Quality Gate fails.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
         run: >
           ./mvnw -B --no-transfer-progress
           org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
