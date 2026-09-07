@@ -30,3 +30,4 @@ enxuto:
 | [0003](0003-stack-do-frontend-nextjs.md) | Stack do frontend: React + Next.js 14 (App Router) + Tailwind, atrás de proxy reverso nginx | Aceito |
 | [0004](0004-postgresql-como-banco-de-dados-no-compose.md) | PostgreSQL como banco de dados, provisionado no docker-compose | Aceito |
 | [0005](0005-flyway-para-migracoes-de-schema.md) | Flyway para versionamento e migração do schema | Aceito |
+| [0006](0006-ci-e-sonarcloud-por-modulo.md) | CI e SonarCloud independentes por módulo (orquestrador + workflows reutilizáveis) | Aceito |

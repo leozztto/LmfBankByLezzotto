@@ -20,13 +20,13 @@
 		<jacoco.version>0.8.13</jacoco.version>
 		<sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
 
-		<!-- SonarCloud defaults for local runs. In CI they are overridden by the
-		     SONAR_ORG / SONAR_PROJECT_KEY Actions variables (see ci.yml); change
-		     them there if the imported project uses a different key/org. -->
+		<!-- Coordenadas do SonarCloud: fonte única de verdade (não há mais override
+		     por Actions vars). O backend-ci.yml passa apenas SONAR_TOKEN e
+		     -Dsonar.qualitygate.wait=true. Projeto: leozztto_lmfbank-backend. -->
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<sonar.organization>leozztto</sonar.organization>
-		<sonar.projectKey>leozztto_LmfBankByLezzotto</sonar.projectKey>
-		<sonar.projectName>LmfBank</sonar.projectName>
+		<sonar.projectKey>leozztto_lmfbank-backend</sonar.projectKey>
+		<sonar.projectName>LmfBank Backend</sonar.projectName>
 		<sonar.java.source>17</sonar.java.source>
 
 		<!-- Merge unit (surefire) + integration (failsafe) coverage for Sonar. -->

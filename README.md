@@ -1,7 +1,8 @@
 [![CI](https://github.com/leozztto/LmfBankByLezzotto/actions/workflows/ci.yml/badge.svg)](https://github.com/leozztto/LmfBankByLezzotto/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=coverage)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
+[![Backend Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=leozztto_lmfbank-backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=leozztto_lmfbank-backend)
+[![Backend Coverage](https://sonarcloud.io/api/project_badges/measure?project=leozztto_lmfbank-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=leozztto_lmfbank-backend)
+[![Frontend Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=leozztto_lmfbank-frontend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=leozztto_lmfbank-frontend)
+[![Frontend Coverage](https://sonarcloud.io/api/project_badges/measure?project=leozztto_lmfbank-frontend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=leozztto_lmfbank-frontend)
 
 ![Java](https://img.shields.io/badge/Java-17-red?logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green?logo=springboot)
@@ -183,51 +184,62 @@ cd backend
 ./mvnw verify    # unitários + integração + cobertura (Flyway + Testcontainers; requer Docker)
 ```
 
-## Pipeline (GitHub Actions)
+## Pipeline (GitHub Actions) — CI por módulo (ADR 0006)
 
-`.github/workflows/ci.yml` roda em cada push nas branches `main`/`develop` e em cada Pull
-Request (steps executam em `backend/`; a Fase 2 divide em `backend-ci.yml` /
-`frontend-ci.yml` / `e2e.yml`):
+`.github/workflows/ci.yml` é um **orquestrador**: roda em cada push nas branches
+`main`/`develop` e em cada Pull Request, **sem `paths` filter**. O job `changes`
+(`dorny/paths-filter@v3`) decide o que roda; `backend-ci.yml` e `frontend-ci.yml` são
+**workflows reutilizáveis** (`workflow_call`) chamados só quando o módulo muda. O job
+**`ci`** agrega os resultados e é o **único *required status check*** — reprova se um módulo
+necessário falhar/cancelar; passa se o módulo foi pulado. (`e2e.yml` fica para a Fase 4.)
 
-1. Build + testes unitários e de integração (`./mvnw verify`).
-2. Cobertura com JaCoCo (relatórios de unidade e integração combinados).
-3. Análise estática no **SonarCloud** com *Quality Gate* — o job falha se o gate reprovar
-   (por padrão, cobertura de código novo abaixo de 80%).
-4. Relatório de cobertura publicado como artefato do workflow.
+| PR toca… | backend-ci | frontend-ci | job `ci` |
+| --- | --- | --- | --- |
+| só `backend/**` | ✅ | ⏭️ skip | ✅ reporta |
+| só `frontend/**` | ⏭️ skip | ✅ | ✅ reporta |
+| ambos | ✅ | ✅ | ✅ reporta |
+| só raiz / `docs/` | ⏭️ skip | ⏭️ skip | ✅ verde |
+
+- **backend-ci**: `./mvnw -B verify` (unitários + integração Testcontainers, Flyway aplica as
+  migrações) → cobertura JaCoCo (unidade + integração) → análise **SonarCloud** com *Quality
+  Gate* → relatório de cobertura como artefato.
+- **frontend-ci**: `npm ci` → `next lint` → Vitest + React Testing Library (`lcov`) →
+  `next build` → análise **SonarCloud** (`sonarqube-scan-action`) com *Quality Gate*.
 
 ### Cobertura do SonarCloud por evento
 
-O plano gratuito do SonarCloud analisa **uma única branch de longa duração** (a *main branch*
-do projeto) mais os **Pull Requests**. Analisar outras branches exige plano pago. Por isso:
+O plano gratuito analisa **uma única branch de longa duração por projeto** (a *main branch*)
+mais os **Pull Requests**. Por isso, para cada projeto:
 
-| Evento | `verify` (build/testes/cobertura) | SonarCloud |
+| Evento | build/testes/cobertura | SonarCloud |
 | --- | --- | --- |
 | Pull Request (mesmo repo) | ✅ | ✅ análise de PR |
 | Push na *main branch* do Sonar (`SONAR_ANALYZED_BRANCH`, padrão `main`) | ✅ | ✅ análise de branch |
 | Push em qualquer outra branch (ex.: `develop`) | ✅ | ⏭️ pulado |
-
-Como o `develop` é a branch de integração real, o ideal é torná-lo a *main branch* no
-SonarCloud (*Administration → Branches*) e definir a variável `SONAR_ANALYZED_BRANCH=develop`
-nas Actions — aí os merges em `develop` passam a ser analisados sem custo, e `main` fica de fora.
+| Pull Request vindo de *fork* | ✅ | ⏭️ pulado (GitHub não expõe secrets) |
 
 ## Configuração do SonarCloud (uma vez)
 
-1. Acesse <https://sonarcloud.io> e entre com a conta do GitHub.
-2. **Analyze new project** → selecione `leozztto/LmfBankByLezzotto`.
-3. Em *Administration → Analysis Method*, desative o *Automatic Analysis* (usamos CI).
-4. Gere um token em *My Account → Security* e adicione no repositório em
-   *Settings → Secrets and variables → Actions → Secrets* como **`SONAR_TOKEN`**
-   (cole só o valor, sem espaços ou quebra de linha).
-5. Anote a *organization key* e a *project key* reais (aparecem na URL do projeto:
-   `.../organizations/<ORG>` e `?id=<PROJECT_KEY>`). Se forem diferentes dos padrões
-   (`leozztto` / `leozztto_LmfBankByLezzotto`), defina-as em
-   *Settings → Secrets and variables → Actions → **Variables*** como
-   **`SONAR_ORG`** e **`SONAR_PROJECT_KEY`** — o workflow usa essas variáveis e não
-   exige mexer no `pom.xml`.
+**Dois projetos** na organização `leozztto`, um por módulo:
 
-Quando a análise do SonarCloud é esperada (PR interno ou push na `SONAR_ANALYZED_BRANCH`),
-o workflow **falha de propósito** se o `SONAR_TOKEN` faltar — para um passo pulado nunca se
-passar por check verde. Em PRs vindos de fork (o GitHub não expõe secrets) a análise é ignorada.
+| Módulo | Project key | Coordenadas em |
+| --- | --- | --- |
+| backend | `leozztto_lmfbank-backend` | `backend/pom.xml` (`<sonar.*>`) |
+| frontend | `leozztto_lmfbank-frontend` | `frontend/sonar-project.properties` |
+
+1. Em <https://sonarcloud.io>, org `leozztto` → criar os dois projetos com **exatamente**
+   essas keys.
+2. Em cada um, *Administration → Analysis Method*: desativar o *Automatic Analysis* (usamos CI).
+3. *Administration → Branches*: definir a *main branch* de cada projeto como `main` (ou
+   `develop`, e então `vars.SONAR_ANALYZED_BRANCH=develop` nas Actions).
+4. Associar o *Quality Gate* "Sonar way" (*Clean as You Code* — só código novo).
+5. Gerar um **Global Analysis Token** em *My Account → Security* e adicioná-lo em
+   *Settings → Secrets and variables → Actions → Secrets* como **`SONAR_TOKEN`** — um único
+   token cobre os dois projetos.
+
+Quando a análise é esperada (PR interno ou push na `SONAR_ANALYZED_BRANCH`), o workflow
+**falha de propósito** se o `SONAR_TOKEN` faltar — para um passo pulado nunca passar por
+check verde.
 
 ---
 

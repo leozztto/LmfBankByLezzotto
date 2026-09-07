@@ -1,5 +1,10 @@
 name: CI
 
+# Orquestrador (ADR 0006). Sem paths filter: sempre roda. O job `changes`
+# (dorny/paths-filter) decide quais módulos rodam; `backend-ci.yml` e
+# `frontend-ci.yml` são reutilizáveis (workflow_call). O job `ci` agrega os
+# resultados e é o ÚNICO required status check nas branches protegidas.
+
 on:
   push:
     branches: [main, develop]
@@ -14,102 +19,67 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build, test & analyze
+  changes:
+    name: detect changes
     runs-on: ubuntu-latest
-    # Ponte da Fase 1: o backend agora vive em backend/. A Fase 2 substitui este
-    # workflow por backend-ci.yml / frontend-ci.yml / e2e.yml com filtros de path.
-    defaults:
-      run:
-        working-directory: backend
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      # SonarCloud coordinates. Override per-repo in
-      # Settings -> Secrets and variables -> Actions -> Variables
-      # without touching the code; the defaults match pom.xml.
-      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'leozztto_LmfBankByLezzotto' }}
-      SONAR_ORG: ${{ vars.SONAR_ORG || 'leozztto' }}
-      # The single long-lived branch SonarCloud analyzes on the free plan (its
-      # "main branch"). Branch analysis of any OTHER branch needs a paid plan and
-      # fails with "Not authorized or project not found", so we only send branch
-      # analysis for pushes to this one. PR analysis works regardless.
-      # If you make `develop` the main branch in SonarCloud, set this to develop.
-      SONAR_ANALYZED_BRANCH: ${{ vars.SONAR_ANALYZED_BRANCH || 'main' }}
-      # true only for pull requests opened from a fork, where secrets are
-      # withheld by GitHub and SonarCloud analysis therefore cannot run.
-      IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
-
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history so SonarCloud can assign blame and detect "new code".
+          # push: paths-filter faz git-diff contra github.event.before
           fetch-depth: 0
-
-      - name: Set up JDK 21
-        # The build runs on JDK 21 because the SonarCloud scanner requires it;
-        # the project itself still targets Java 17 bytecode (see <java.version>).
-        uses: actions/setup-java@v4
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v3
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-          cache-dependency-path: backend/pom.xml
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/backend-ci.yml'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/frontend-ci.yml'
+              - '.github/workflows/ci.yml'
 
-      - name: Make Maven wrapper executable
-        # Safety net: the repo is developed on Windows, where the executable bit
-        # is easily lost. `git update-index --chmod=+x mvnw` is the real fix.
-        run: chmod +x mvnw
+  backend:
+    name: backend
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    uses: ./.github/workflows/backend-ci.yml
+    secrets: inherit
 
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+  frontend:
+    name: frontend
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    uses: ./.github/workflows/frontend-ci.yml
+    secrets: inherit
 
-      - name: Check SonarCloud configuration
-        # Fail loudly when SonarCloud analysis is expected but the token is
-        # missing, so a silently-skipped analysis can never look like a pass.
-        if: >-
-          ${{ env.IS_FORK_PR != 'true'
-          && (github.event_name == 'pull_request'
-          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
+  ci:
+    # ÚNICO required status check. Reprova só se um módulo necessário falhar ou
+    # for cancelado; `skipped` (módulo não mudou) conta como OK.
+    name: ci
+    needs: [changes, backend, frontend]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify module pipelines
         run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "::error::SONAR_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
-            exit 1
-          fi
-          echo "SonarCloud: organization=$SONAR_ORG project=$SONAR_PROJECT_KEY"
-
-      - name: Build, run unit + integration tests, generate coverage
-        # `verify` runs surefire (unit) + failsafe (integration, on Testcontainers
-        # PostgreSQL — Docker is available on ubuntu-latest) and writes the two
-        # JaCoCo XML reports consumed by SonarCloud.
-        run: ./mvnw -B --no-transfer-progress verify
-
-      - name: SonarCloud analysis
-        # PR analysis on every same-repo PR; branch analysis only for pushes to
-        # SONAR_ANALYZED_BRANCH (the free plan covers a single branch). Other
-        # branch pushes still get the full build/test/coverage above.
-        # `qualitygate.wait` fails the job when the Quality Gate fails.
-        if: >-
-          ${{ env.IS_FORK_PR != 'true'
-          && (github.event_name == 'pull_request'
-          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
-        run: >
-          ./mvnw -B --no-transfer-progress
-          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-          -Dsonar.organization=$SONAR_ORG
-          -Dsonar.projectKey=$SONAR_PROJECT_KEY
-          -Dsonar.qualitygate.wait=true
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: jacoco-coverage
-          path: |
-            backend/target/site/jacoco/
-            backend/target/site/jacoco-it/
-          if-no-files-found: warn
+          echo "changes:  ${{ needs.changes.result }}"
+          echo "backend:  ${{ needs.backend.result }}"
+          echo "frontend: ${{ needs.frontend.result }}"
+          fail=0
+          for r in "${{ needs.changes.result }}" "${{ needs.backend.result }}" "${{ needs.frontend.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "::error::CI dependency finished with '$r'"; fail=1 ;;
+            esac
+          done
+          exit $fail
