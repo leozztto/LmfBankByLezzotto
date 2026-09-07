@@ -1,3 +1,8 @@
+[![CI](https://github.com/leozztto/LmfBankByLezzotto/actions/workflows/ci.yml/badge.svg)](https://github.com/leozztto/LmfBankByLezzotto/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=coverage)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=leozztto_LmfBankByLezzotto&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=leozztto_LmfBankByLezzotto)
+
 ![Java](https://img.shields.io/badge/Java-17-red?logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green?logo=springboot)
 ![Kafka](https://img.shields.io/badge/Kafka-Event%20Streaming-black?logo=apachekafka)
@@ -128,6 +133,50 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
 - Projection for optimized balance queries
 - Idempotent operations
 - Distributed processing via Kafka
+
+---
+
+# Qualidade e CI
+
+## Testes
+
+- **Unitários** (`*Test`, Surefire): regras de crédito, débito e transferência do ledger com Mockito.
+- **Integração** (`*IT`, Failsafe): sobem o contexto Spring contra um **PostgreSQL real via Testcontainers**
+  (slice de repositório, serviço + banco, concorrência de transferência e camada REST com JWT).
+
+```bash
+./mvnw test      # só unitários (rápido, sem Docker)
+./mvnw verify    # unitários + integração + cobertura (requer Docker rodando)
+```
+
+## Pipeline (GitHub Actions)
+
+`.github/workflows/ci.yml` roda em cada push nas branches `main`/`develop` e em cada Pull Request:
+
+1. Build + testes unitários e de integração (`./mvnw verify`).
+2. Cobertura com JaCoCo (relatórios de unidade e integração combinados).
+3. Análise estática no **SonarCloud** com *Quality Gate* — o job falha se o gate reprovar
+   (por padrão, cobertura de código novo abaixo de 80%).
+4. Relatório de cobertura publicado como artefato do workflow.
+
+## Configuração do SonarCloud (uma vez)
+
+1. Acesse <https://sonarcloud.io> e entre com a conta do GitHub.
+2. **Analyze new project** → selecione `leozztto/LmfBankByLezzotto`.
+3. Em *Administration → Analysis Method*, desative o *Automatic Analysis* (usamos CI).
+4. Gere um token em *My Account → Security* e adicione no repositório em
+   *Settings → Secrets and variables → Actions → Secrets* como **`SONAR_TOKEN`**
+   (cole só o valor, sem espaços ou quebra de linha).
+5. Anote a *organization key* e a *project key* reais (aparecem na URL do projeto:
+   `.../organizations/<ORG>` e `?id=<PROJECT_KEY>`). Se forem diferentes dos padrões
+   (`leozztto` / `leozztto_LmfBankByLezzotto`), defina-as em
+   *Settings → Secrets and variables → Actions → **Variables*** como
+   **`SONAR_ORG`** e **`SONAR_PROJECT_KEY`** — o workflow usa essas variáveis e não
+   exige mexer no `pom.xml`.
+
+O workflow **falha de propósito** se o `SONAR_TOKEN` faltar num build do próprio repo
+(push ou PR interno), para um passo pulado nunca se passar por check verde. Em PRs
+vindos de fork (onde o GitHub não expõe secrets) a análise é ignorada.
 
 ---
 

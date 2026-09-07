@@ -16,6 +16,33 @@
 		<java.version>17</java.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<lombok.version>1.18.32</lombok.version>
+
+		<jacoco.version>0.8.13</jacoco.version>
+		<sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
+
+		<!-- SonarCloud defaults for local runs. In CI they are overridden by the
+		     SONAR_ORG / SONAR_PROJECT_KEY Actions variables (see ci.yml); change
+		     them there if the imported project uses a different key/org. -->
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.organization>leozztto</sonar.organization>
+		<sonar.projectKey>leozztto_LmfBankByLezzotto</sonar.projectKey>
+		<sonar.projectName>LmfBank</sonar.projectName>
+		<sonar.java.source>17</sonar.java.source>
+
+		<!-- Merge unit (surefire) + integration (failsafe) coverage for Sonar. -->
+		<sonar.coverage.jacoco.xmlReportPaths>
+			${project.basedir}/target/site/jacoco/jacoco.xml,${project.basedir}/target/site/jacoco-it/jacoco.xml
+		</sonar.coverage.jacoco.xmlReportPaths>
+
+		<!-- Generated code and plain data holders carry no logic worth covering. -->
+		<sonar.coverage.exclusions>
+			**/domain/**,
+			**/config/**,
+			**/*Application.java,
+			**/mapper/**,
+			**/kafka/dto/**,
+			**/exception/**
+		</sonar.coverage.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -86,6 +113,21 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 		<dependency>
@@ -131,11 +173,67 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<!-- Unit tests (surefire) -->
+					<execution>
+						<id>prepare-unit-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>unit-report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<!-- Integration tests (failsafe) -->
+					<execution>
+						<id>prepare-it-agent</id>
+						<goals>
+							<goal>prepare-agent-integration</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>it-report</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>report-integration</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>${sonar-maven-plugin.version}</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.11.0</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<!-- release (not source/target) so a JDK 21 build still enforces
+					     Java 17 API compatibility — CI compiles on 21 for SonarCloud. -->
+					<release>${java.version}</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>

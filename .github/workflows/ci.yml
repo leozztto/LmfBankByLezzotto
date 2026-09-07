@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test & analyze
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # SonarCloud coordinates. Override per-repo in
+      # Settings -> Secrets and variables -> Actions -> Variables
+      # without touching the code; the defaults match pom.xml.
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'leozztto_LmfBankByLezzotto' }}
+      SONAR_ORG: ${{ vars.SONAR_ORG || 'leozztto' }}
+      # true only for pull requests opened from a fork, where secrets are
+      # withheld by GitHub and SonarCloud analysis therefore cannot run.
+      IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so SonarCloud can assign blame and detect "new code".
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        # The build runs on JDK 21 because the SonarCloud scanner requires it;
+        # the project itself still targets Java 17 bytecode (see <java.version>).
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        # Safety net: the repo is developed on Windows, where the executable bit
+        # is easily lost. `git update-index --chmod=+x mvnw` is the real fix.
+        run: chmod +x mvnw
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Check SonarCloud configuration
+        # Fail loudly on our own branches/PRs if the token is missing, so a
+        # silently-skipped analysis can never masquerade as a passing check.
+        if: ${{ env.IS_FORK_PR != 'true' }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "SonarCloud: organization=$SONAR_ORG project=$SONAR_PROJECT_KEY"
+
+      - name: Build, run unit + integration tests, generate coverage
+        # `verify` runs surefire (unit) + failsafe (integration, on Testcontainers
+        # PostgreSQL — Docker is available on ubuntu-latest) and writes the two
+        # JaCoCo XML reports consumed by SonarCloud.
+        run: ./mvnw -B --no-transfer-progress verify
+
+      - name: SonarCloud analysis
+        # Runs on every push and on same-repo PRs; skipped only for fork PRs.
+        # `qualitygate.wait` fails the job when the Quality Gate fails, e.g.
+        # coverage on new code below 80%.
+        if: ${{ env.IS_FORK_PR != 'true' }}
+        run: >
+          ./mvnw -B --no-transfer-progress
+          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.organization=$SONAR_ORG
+          -Dsonar.projectKey=$SONAR_PROJECT_KEY
+          -Dsonar.qualitygate.wait=true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: jacoco-coverage
+          path: |
+            target/site/jacoco/
+            target/site/jacoco-it/
+          if-no-files-found: warn

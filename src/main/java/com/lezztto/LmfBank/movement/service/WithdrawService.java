@@ -33,7 +33,9 @@ public class WithdrawService {
 
         log.info("Processing transaction of type: {}", TransactionType.DEBIT.name());
 
-        var account = accountService.findByIdAccount(transactionRequest.getAccountId());
+        // Lock the account for the whole transaction so a concurrent debit/transfer on the
+        // same account cannot read a stale balance and overdraw it.
+        var account = accountService.findByIdAccountForUpdate(transactionRequest.getAccountId());
 
         accountValidator.validateStatusAccountForTransaction(transactionRequest.getAccountId(), account.getAccountStatus().name());
 
