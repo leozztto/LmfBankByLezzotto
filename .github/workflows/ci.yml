@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test & analyze
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so SonarCloud can assign blame and detect "new code".
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        # The build runs on JDK 21 because the SonarCloud scanner requires it;
+        # the project itself still targets Java 17 bytecode (see <java.version>).
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        # Safety net: the repo is developed on Windows, where the executable bit
+        # is easily lost. `git update-index --chmod=+x mvnw` is the real fix.
+        run: chmod +x mvnw
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build, run unit + integration tests, generate coverage
+        # `verify` runs surefire (unit) + failsafe (integration, on Testcontainers
+        # PostgreSQL — Docker is available on ubuntu-latest) and writes the two
+        # JaCoCo XML reports consumed by SonarCloud.
+        run: ./mvnw -B --no-transfer-progress verify
+
+      - name: SonarCloud analysis
+        # Runs only when SONAR_TOKEN is configured (skipped on fork PRs and before
+        # the repo is onboarded to SonarCloud). `qualitygate.wait` fails the job
+        # when the Quality Gate fails, e.g. coverage on new code below 80%.
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: >
+          ./mvnw -B --no-transfer-progress
+          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.qualitygate.wait=true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: jacoco-coverage
+          path: |
+            target/site/jacoco/
+            target/site/jacoco-it/
+          if-no-files-found: warn
