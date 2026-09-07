@@ -17,6 +17,39 @@ Sistema bancário digital construído com foco em **consistência financeira, es
 
 ---
 
+# Estrutura (monorepo)
+
+O repositório é um **monorepo com módulos isolados** (ADR 0002):
+
+```
+backend/    # API Spring Boot (era a raiz) — pom.xml, Dockerfile, src/, k8s/
+frontend/   # Web app React + Next.js 14 (ADR 0003)
+nginx/      # Proxy reverso: /api -> backend:8080 · / -> frontend:3000
+docs/adr/   # Architecture Decision Records
+docker-compose.yaml   # postgres · kafka · backend · frontend · nginx
+Taskfile.yml          # up · down · be:test · fe:test
+```
+
+## Como rodar
+
+```bash
+cp .env.example .env          # ajuste JWT_SECRET etc.
+docker compose up --build     # ou: task up
+
+# http://localhost         -> frontend (via nginx)
+# http://localhost/api/... -> backend  (via nginx, prefixo /api removido)
+```
+
+O schema do banco é criado e versionado pelo **Flyway** (ADR 0005); o Postgres sobe no
+próprio compose (ADR 0004) — não é mais preciso ter um Postgres no host.
+
+```bash
+cd backend && ./mvnw test      # só unitários (rápido, sem Docker)
+cd backend && ./mvnw verify    # unitários + integração (Testcontainers + Flyway; requer Docker)
+```
+
+---
+
 # Visão geral
 
 O projeto simula um sistema bancário completo com suporte a:
@@ -145,13 +178,16 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
   (slice de repositório, serviço + banco, concorrência de transferência e camada REST com JWT).
 
 ```bash
+cd backend
 ./mvnw test      # só unitários (rápido, sem Docker)
-./mvnw verify    # unitários + integração + cobertura (requer Docker rodando)
+./mvnw verify    # unitários + integração + cobertura (Flyway + Testcontainers; requer Docker)
 ```
 
 ## Pipeline (GitHub Actions)
 
-`.github/workflows/ci.yml` roda em cada push nas branches `main`/`develop` e em cada Pull Request:
+`.github/workflows/ci.yml` roda em cada push nas branches `main`/`develop` e em cada Pull
+Request (steps executam em `backend/`; a Fase 2 divide em `backend-ci.yml` /
+`frontend-ci.yml` / `e2e.yml`):
 
 1. Build + testes unitários e de integração (`./mvnw verify`).
 2. Cobertura com JaCoCo (relatórios de unidade e integração combinados).

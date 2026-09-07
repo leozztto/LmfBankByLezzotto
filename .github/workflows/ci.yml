@@ -17,6 +17,11 @@ jobs:
   build:
     name: Build, test & analyze
     runs-on: ubuntu-latest
+    # Ponte da Fase 1: o backend agora vive em backend/. A Fase 2 substitui este
+    # workflow por backend-ci.yml / frontend-ci.yml / e2e.yml com filtros de path.
+    defaults:
+      run:
+        working-directory: backend
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       # SonarCloud coordinates. Override per-repo in
@@ -49,6 +54,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Make Maven wrapper executable
         # Safety net: the repo is developed on Windows, where the executable bit
@@ -104,6 +110,6 @@ jobs:
         with:
           name: jacoco-coverage
           path: |
-            target/site/jacoco/
-            target/site/jacoco-it/
+            backend/target/site/jacoco/
+            backend/target/site/jacoco-it/
           if-no-files-found: warn

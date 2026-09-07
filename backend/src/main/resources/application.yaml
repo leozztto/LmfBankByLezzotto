@@ -5,6 +5,13 @@ spring:
   application:
     name: lmf-bank
 
+  jpa:
+    hibernate:
+      # Schema é criado e versionado pelo Flyway (ADR 0005). O Hibernate apenas
+      # valida que as entidades batem com o schema. Default seguro herdado por
+      # todos os perfis de runtime.
+      ddl-auto: validate
+
   kafka:
     bootstrap-servers: localhost:9092
 

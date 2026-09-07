@@ -1,0 +1,43 @@
+# Comandos padronizados entre local e CI (ADR 0002). Requer go-task (https://taskfile.dev)
+# e Docker Desktop com `docker compose` v2.
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  up:
+    desc: Build e sobe a stack completa (postgres, kafka, backend, frontend, nginx)
+    preconditions:
+      - sh: test -f .env
+        msg: "Copie .env.example para .env primeiro"
+    cmds:
+      - docker compose up --build -d
+
+  down:
+    desc: Para a stack, mantém o volume pgdata
+    cmds:
+      - docker compose down
+
+  down:clean:
+    desc: Para a stack e apaga volumes (DB limpo)
+    cmds:
+      - docker compose down -v
+
+  be:test:
+    desc: Testes unitários + integração do backend (precisa de Docker para Testcontainers)
+    dir: backend
+    cmds:
+      - '{{if eq OS "windows"}}cmd /c mvnw.cmd -B verify{{else}}./mvnw -B verify{{end}}'
+
+  fe:test:
+    desc: Lint + testes unitários do frontend com cobertura
+    dir: frontend
+    cmds:
+      - npm ci
+      - npm run lint
+      - npm run test:coverage
+
+  e2e:
+    desc: "(stub) E2E cross-módulo — implementado na Fase 4"
+    cmds:
+      - echo "e2e não implementado até a Fase 4"
