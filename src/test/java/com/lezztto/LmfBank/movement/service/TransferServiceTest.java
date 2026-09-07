@@ -81,7 +81,7 @@ class TransferServiceTest {
     }
 
     private void stubActiveAccounts() {
-        when(accountService.findByIdAccount(FROM)).thenReturn(account(FROM, AccountStatus.ACTIVE));
+        when(accountService.findByIdAccountForUpdate(FROM)).thenReturn(account(FROM, AccountStatus.ACTIVE));
         when(accountService.findByIdAccount(TO)).thenReturn(account(TO, AccountStatus.ACTIVE));
     }
 
@@ -190,7 +190,7 @@ class TransferServiceTest {
     @DisplayName("conta de destino não ativa: propaga AccountStatusException e não gera lançamentos")
     void shouldRejectWhenDestinationAccountNotActive() {
         when(idempotencyService.tryLock(KEY)).thenReturn(true);
-        when(accountService.findByIdAccount(FROM)).thenReturn(account(FROM, AccountStatus.ACTIVE));
+        when(accountService.findByIdAccountForUpdate(FROM)).thenReturn(account(FROM, AccountStatus.ACTIVE));
         when(accountService.findByIdAccount(TO)).thenReturn(account(TO, AccountStatus.BLOCKED));
         org.mockito.Mockito.lenient()
                 .doThrow(new AccountStatusException(TO, AccountStatus.BLOCKED.name()))

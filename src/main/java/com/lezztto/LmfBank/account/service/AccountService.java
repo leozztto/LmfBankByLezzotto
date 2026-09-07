@@ -100,6 +100,17 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
+    /**
+     * Loads the account holding a pessimistic write lock. Must be called inside an active
+     * transaction; the lock is held until that transaction commits or rolls back, so any
+     * other debit/transfer touching the same account waits its turn.
+     */
+    public Account findByIdAccountForUpdate(Long accountId) {
+
+        return accountRepository.findByIdForUpdate(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
     public AccountResponse findByDocumentNumber(String documentNumber) {
 
         log.info("Finding account by document number: {}", documentNumber);
