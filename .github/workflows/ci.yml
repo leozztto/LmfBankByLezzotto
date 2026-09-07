@@ -27,11 +27,13 @@ jobs:
           # Full history so SonarCloud can assign blame and detect "new code".
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
+        # The build runs on JDK 21 because the SonarCloud scanner requires it;
+        # the project itself still targets Java 17 bytecode (see <java.version>).
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Make Maven wrapper executable

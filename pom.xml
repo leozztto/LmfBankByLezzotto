@@ -229,8 +229,9 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.11.0</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<!-- release (not source/target) so a JDK 21 build still enforces
+					     Java 17 API compatibility — CI compiles on 21 for SonarCloud. -->
+					<release>${java.version}</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
