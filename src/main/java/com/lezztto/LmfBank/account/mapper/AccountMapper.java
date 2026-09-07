@@ -14,6 +14,7 @@ public interface AccountMapper {
 
     Account toAccount(AccountDto accountDto);
 
+    @Mapping(target = "accountId", source = "id")
     @Mapping(
             target = "maskedDocument",
             source = "documentNumber",

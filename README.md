@@ -159,6 +159,21 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
    (por padrão, cobertura de código novo abaixo de 80%).
 4. Relatório de cobertura publicado como artefato do workflow.
 
+### Cobertura do SonarCloud por evento
+
+O plano gratuito do SonarCloud analisa **uma única branch de longa duração** (a *main branch*
+do projeto) mais os **Pull Requests**. Analisar outras branches exige plano pago. Por isso:
+
+| Evento | `verify` (build/testes/cobertura) | SonarCloud |
+| --- | --- | --- |
+| Pull Request (mesmo repo) | ✅ | ✅ análise de PR |
+| Push na *main branch* do Sonar (`SONAR_ANALYZED_BRANCH`, padrão `main`) | ✅ | ✅ análise de branch |
+| Push em qualquer outra branch (ex.: `develop`) | ✅ | ⏭️ pulado |
+
+Como o `develop` é a branch de integração real, o ideal é torná-lo a *main branch* no
+SonarCloud (*Administration → Branches*) e definir a variável `SONAR_ANALYZED_BRANCH=develop`
+nas Actions — aí os merges em `develop` passam a ser analisados sem custo, e `main` fica de fora.
+
 ## Configuração do SonarCloud (uma vez)
 
 1. Acesse <https://sonarcloud.io> e entre com a conta do GitHub.
@@ -174,9 +189,9 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
    **`SONAR_ORG`** e **`SONAR_PROJECT_KEY`** — o workflow usa essas variáveis e não
    exige mexer no `pom.xml`.
 
-O workflow **falha de propósito** se o `SONAR_TOKEN` faltar num build do próprio repo
-(push ou PR interno), para um passo pulado nunca se passar por check verde. Em PRs
-vindos de fork (onde o GitHub não expõe secrets) a análise é ignorada.
+Quando a análise do SonarCloud é esperada (PR interno ou push na `SONAR_ANALYZED_BRANCH`),
+o workflow **falha de propósito** se o `SONAR_TOKEN` faltar — para um passo pulado nunca se
+passar por check verde. Em PRs vindos de fork (o GitHub não expõe secrets) a análise é ignorada.
 
 ---
 
