@@ -165,11 +165,18 @@ Utilizado para processamento assíncrono de eventos de criação de conta.
 2. **Analyze new project** → selecione `leozztto/LmfBankByLezzotto`.
 3. Em *Administration → Analysis Method*, desative o *Automatic Analysis* (usamos CI).
 4. Gere um token em *My Account → Security* e adicione no repositório em
-   *Settings → Secrets and variables → Actions* como **`SONAR_TOKEN`**.
-5. Confirme que `sonar.organization` e `sonar.projectKey` no `pom.xml` batem com os do projeto importado.
+   *Settings → Secrets and variables → Actions → Secrets* como **`SONAR_TOKEN`**
+   (cole só o valor, sem espaços ou quebra de linha).
+5. Anote a *organization key* e a *project key* reais (aparecem na URL do projeto:
+   `.../organizations/<ORG>` e `?id=<PROJECT_KEY>`). Se forem diferentes dos padrões
+   (`leozztto` / `leozztto_LmfBankByLezzotto`), defina-as em
+   *Settings → Secrets and variables → Actions → **Variables*** como
+   **`SONAR_ORG`** e **`SONAR_PROJECT_KEY`** — o workflow usa essas variáveis e não
+   exige mexer no `pom.xml`.
 
-Enquanto o `SONAR_TOKEN` não existir, o passo de análise é ignorado e o restante do pipeline
-(build, testes, cobertura) continua funcionando normalmente.
+O workflow **falha de propósito** se o `SONAR_TOKEN` faltar num build do próprio repo
+(push ou PR interno), para um passo pulado nunca se passar por check verde. Em PRs
+vindos de fork (onde o GitHub não expõe secrets) a análise é ignorada.
 
 ---
 
