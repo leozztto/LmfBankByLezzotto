@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { cep, cpf, isValidCpf, money, pastDate, phoneBR } from "./common";
+import {
+  cep,
+  cpf,
+  isValidCpf,
+  money,
+  parseMoney,
+  pastDate,
+  phoneBR,
+} from "./common";
 
 describe("isValidCpf", () => {
   it("accepts a CPF with correct check digits", () => {
@@ -12,6 +20,20 @@ describe("isValidCpf", () => {
     expect(isValidCpf("123")).toBe(false);
     expect(isValidCpf("111.111.111-11")).toBe(false);
     expect(isValidCpf("52998224724")).toBe(false);
+  });
+
+  it("accepts a CPF whose check-digit modulo lands on 10 (→ 0)", () => {
+    expect(isValidCpf("00000000604")).toBe(true);
+  });
+});
+
+describe("parseMoney", () => {
+  it("parses a BR-formatted string (dots are thousands separators)", () => {
+    expect(parseMoney("R$ 1.234,56")).toBe(1234.56);
+    expect(parseMoney("1000")).toBe(1000);
+  });
+  it("returns NaN for an unparseable string", () => {
+    expect(Number.isNaN(parseMoney("abc"))).toBe(true);
   });
 });
 

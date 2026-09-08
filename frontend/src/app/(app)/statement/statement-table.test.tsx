@@ -74,6 +74,78 @@ describe("StatementTable", () => {
     expect(screen.getByText("Débito")).toBeInTheDocument();
   });
 
+  it("badges a non-completed entry as destructive", async () => {
+    server.use(
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json({
+          accountId: 1,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [txn({ status: "FAILED", description: "estorno" })],
+        }),
+      ),
+    );
+
+    renderWithProviders(<StatementTable />);
+
+    expect(await screen.findByText("Falhou")).toBeInTheDocument();
+  });
+
+  it("prompts to pick an account when none is selected", async () => {
+    useUiStore.setState({ selectedAccountId: null });
+    server.use(
+      http.get("/api/accounts", () => HttpResponse.json([acc(1), acc(2)])),
+    );
+
+    renderWithProviders(<StatementTable />);
+
+    expect(await screen.findByText("Selecione uma conta")).toBeInTheDocument();
+  });
+
+  it("choosing an account in the select updates the ui store", async () => {
+    useUiStore.setState({ selectedAccountId: null });
+    server.use(
+      http.get("/api/accounts", () => HttpResponse.json([acc(1), acc(2)])),
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json({
+          accountId: 2,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(<StatementTable />);
+
+    const select = await screen.findByRole("combobox");
+    await userEvent.selectOptions(
+      select,
+      await screen.findByRole("option", { name: /200-2/ }),
+    );
+
+    await waitFor(() =>
+      expect(useUiStore.getState().selectedAccountId).toBe(2),
+    );
+  });
+
+  it("shows an error alert when the statement request fails", async () => {
+    server.use(
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json(
+          { status: 500, code: "INTERNAL", message: "falhou o extrato" },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<StatementTable />);
+
+    expect(await screen.findByText("falhou o extrato")).toBeInTheDocument();
+  });
+
   it("applying a date range refetches with the period", async () => {
     let lastUrl = "";
     server.use(

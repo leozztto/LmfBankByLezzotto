@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "@/test/msw/server";
 import { renderWithProviders } from "@/test/utils";
 import { useUiStore } from "@/stores/ui-store";
+import { notify } from "@/lib/notify";
 import { MovementForm } from "./movement-form";
 
 vi.mock("@/lib/notify", () => ({
@@ -127,6 +128,63 @@ describe("MovementForm", () => {
     expect(
       await screen.findByText(/Saldo insuficiente para conta 1/),
     ).toBeInTheDocument();
+  });
+
+  it("picking an account in the select writes it to the ui store", async () => {
+    const user = userEvent.setup();
+    useUiStore.setState({ selectedAccountId: null });
+    server.use(
+      http.get("/api/accounts", () => HttpResponse.json([acc(1), acc(2)])),
+    );
+
+    renderWithProviders(<MovementForm />);
+
+    const select = await screen.findByLabelText("Conta");
+    await user.selectOptions(
+      select,
+      await screen.findByRole("option", { name: /2-2/ }),
+    );
+
+    await waitFor(() =>
+      expect(useUiStore.getState().selectedAccountId).toBe(2),
+    );
+  });
+
+  it("withdraw success notifies 'Saque realizado'", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post("/api/transactions", () =>
+        HttpResponse.json(
+          {
+            transactionId: "t2",
+            accountId: 1,
+            type: "DEBIT",
+            amount: 30,
+            status: "COMPLETED",
+            description: "teste",
+            createdAt: "2026-09-08T10:00:00",
+            transferId: null,
+          },
+          { status: 201 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<MovementForm />);
+    await user.click(screen.getByRole("tab", { name: "Saque" }));
+    await fill(user, "3000");
+    await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(
+      screen
+        .getAllByRole("button", { name: "Sacar" })
+        .find((b) => dialog.contains(b))!,
+    );
+
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith("Saque realizado"),
+    );
   });
 
   it("blocks submit when the amount is below the minimum", async () => {

@@ -112,4 +112,28 @@ describe("apiFetch", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect(err.code).toBe("UPSTREAM");
   });
+
+  it("falls back to statusText when an error body is empty", async () => {
+    server.use(
+      http.get("/api/empty", () => new HttpResponse(null, { status: 503 })),
+    );
+    const err = (await apiFetch("empty").catch((e) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("UPSTREAM");
+    expect(err.status).toBe(503);
+  });
+
+  it("returns the raw text when a JSON content-type carries invalid JSON", async () => {
+    server.use(
+      http.get(
+        "/api/badjson",
+        () =>
+          new HttpResponse("{not json", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+      ),
+    );
+    await expect(apiFetch("badjson")).resolves.toBe("{not json");
+  });
 });

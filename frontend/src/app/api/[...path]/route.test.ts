@@ -69,6 +69,69 @@ describe("BFF catch-all proxy /api/[...path]", () => {
     expect(body).toEqual({ amount: 10 });
   });
 
+  it.each([
+    ["PUT", "PUT"],
+    ["PATCH", "PATCH"],
+    ["DELETE", "DELETE"],
+  ])("forwards %s to the backend", async (_label, method) => {
+    let seenMethod: string | undefined;
+    server.use(
+      http.all("http://localhost:8080/accounts/1", ({ request }) => {
+        seenMethod = request.method;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const route = await import("./route");
+    const handler = (
+      route as unknown as Record<
+        string,
+        (r: NextRequest, c: unknown) => Promise<Response>
+      >
+    )[method]!;
+    const res = await handler(
+      req("http://localhost/api/accounts/1", { method }),
+      { params: { path: ["accounts", "1"] } },
+    );
+
+    expect(seenMethod).toBe(method);
+    expect(res.status).toBe(204);
+  });
+
+  it("forwards the incoming Accept header to the backend", async () => {
+    let accept: string | null = null;
+    server.use(
+      http.get("http://localhost:8080/accounts", ({ request }) => {
+        accept = request.headers.get("accept");
+        return HttpResponse.json([]);
+      }),
+    );
+
+    const { GET } = await import("./route");
+    await GET(
+      req("http://localhost/api/accounts", {
+        headers: { accept: "application/json" },
+      }),
+      { params: { path: ["accounts"] } },
+    );
+    expect(accept).toBe("application/json");
+  });
+
+  it("defaults the response content-type to application/json when upstream omits it", async () => {
+    server.use(
+      http.get(
+        "http://localhost:8080/accounts",
+        () => new HttpResponse(null, { status: 200 }),
+      ),
+    );
+
+    const { GET } = await import("./route");
+    const res = await GET(req("http://localhost/api/accounts"), {
+      params: { path: ["accounts"] },
+    });
+    expect(res.headers.get("content-type")).toBe("application/json");
+  });
+
   it("omits the Authorization header when there is no cookie", async () => {
     token = undefined;
     let auth: string | null = "x";

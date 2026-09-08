@@ -18,7 +18,9 @@ describe("formatDate", () => {
   it("formats yyyy-MM-dd as dd/MM/yyyy", () => {
     expect(formatDate("2026-01-31")).toBe("31/01/2026");
   });
-  it("returns a dash for missing input", () => {
+  it("returns a dash for missing or unparseable input", () => {
     expect(formatDate(undefined)).toBe("—");
+    expect(formatDate(null)).toBe("—");
+    expect(formatDate("not-a-date")).toBe("—");
   });
 });

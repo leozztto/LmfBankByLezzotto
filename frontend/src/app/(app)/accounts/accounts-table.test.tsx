@@ -44,4 +44,17 @@ describe("AccountsTable", () => {
     renderWithProviders(<AccountsTable />);
     expect(await screen.findByText("Nenhuma conta")).toBeInTheDocument();
   });
+
+  it("shows an error alert when the request fails", async () => {
+    server.use(
+      http.get("/api/accounts", () =>
+        HttpResponse.json(
+          { status: 500, code: "INTERNAL", message: "falha ao listar" },
+          { status: 500 },
+        ),
+      ),
+    );
+    renderWithProviders(<AccountsTable />);
+    expect(await screen.findByText("falha ao listar")).toBeInTheDocument();
+  });
 });

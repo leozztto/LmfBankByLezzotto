@@ -34,6 +34,14 @@ describe("GET /api/auth/session", () => {
     });
   });
 
+  it("valid cookie without exp -> authenticated, expiresAt undefined", async () => {
+    token = jwt({ sub: "dave" });
+    const { GET } = await import("./route");
+    const json = await (await GET()).json();
+    expect(json).toEqual({ authenticated: true, username: "dave" });
+    expect(json).not.toHaveProperty("expiresAt");
+  });
+
   it("expired cookie -> not authenticated and cleared", async () => {
     token = jwt({ sub: "carol", exp: Math.floor(Date.now() / 1000) - 10 });
     const { GET } = await import("./route");

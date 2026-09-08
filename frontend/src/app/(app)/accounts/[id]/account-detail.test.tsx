@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +71,144 @@ describe("AccountDetail", () => {
     renderWithProviders(<AccountDetail id={5} />);
     await screen.findByText("Maria Silva");
     expect(useUiStore.getState().selectedAccountId).toBe(5);
+  });
+
+  it("renders the address row and recent transactions when present", async () => {
+    server.use(
+      http.get("/api/accounts/5", () =>
+        HttpResponse.json({
+          ...account,
+          addresses: [
+            {
+              id: 1,
+              street: "Rua A",
+              number: "10",
+              city: "Campinas",
+              state: "SP",
+              zipCode: "13000-000",
+              neighborhood: "Centro",
+              complement: "",
+              country: "BR",
+              addressType: "R",
+            },
+          ],
+        }),
+      ),
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json({
+          accountId: 5,
+          balance: 500,
+          startDate: null,
+          endDate: null,
+          transactions: [
+            {
+              transactionId: "t1",
+              accountId: 5,
+              type: "CREDIT",
+              amount: 200,
+              status: "COMPLETED",
+              description: "salário",
+              createdAt: "2026-09-08T10:00:00",
+              transferId: null,
+            },
+          ],
+        }),
+      ),
+    );
+
+    renderWithProviders(<AccountDetail id={5} />);
+
+    expect(
+      await screen.findByText("Rua A, 10 — Campinas/SP"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Últimos lançamentos")).toBeInTheDocument();
+    expect(screen.getByText(/salário/)).toBeInTheDocument();
+  });
+
+  it("shows a skeleton for the balance while the statement loads, then the account balance as fallback", async () => {
+    server.use(
+      http.get("/api/accounts/5", () => HttpResponse.json(account)),
+      http.get("/api/accounts/statement", async () => {
+        await delay(50);
+        return HttpResponse.json(
+          { status: 500, code: "INTERNAL", message: "sem extrato" },
+          { status: 500 },
+        );
+      }),
+    );
+
+    const { container } = renderWithProviders(<AccountDetail id={5} />);
+
+    await screen.findByText("Maria Silva");
+    expect(container.querySelector(".animate-pulse")).not.toBeNull();
+
+    // statement failed -> falls back to the account's own availableBalance (10)
+    expect(await screen.findByText("R$ 10,00")).toBeInTheDocument();
+  });
+
+  it("badges a blocked account as destructive and tolerates null address parts", async () => {
+    server.use(
+      http.get("/api/accounts/5", () =>
+        HttpResponse.json({
+          ...account,
+          accountStatus: "B",
+          addresses: [
+            {
+              id: 9,
+              street: null,
+              number: null,
+              city: null,
+              state: null,
+              zipCode: null,
+              neighborhood: null,
+              complement: null,
+              country: null,
+              addressType: null,
+            },
+          ],
+        }),
+      ),
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json({
+          accountId: 5,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(<AccountDetail id={5} />);
+
+    expect(await screen.findByText("Bloqueada")).toBeInTheDocument();
+    expect(screen.getByText("Endereço")).toBeInTheDocument();
+    expect(screen.getByText(/—\s*\//)).toBeInTheDocument();
+  });
+
+  it("shows an error alert on a non-404 failure", async () => {
+    server.use(
+      http.get("/api/accounts/5", () =>
+        HttpResponse.json(
+          { status: 500, code: "INTERNAL", message: "explodiu" },
+          { status: 500 },
+        ),
+      ),
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json({
+          accountId: 5,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(<AccountDetail id={5} />);
+
+    expect(await screen.findByText("explodiu")).toBeInTheDocument();
+    expect(notFound).not.toHaveBeenCalled();
   });
 
   it("calls notFound() on a 404", async () => {
