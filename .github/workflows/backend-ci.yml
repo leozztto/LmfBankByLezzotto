@@ -1,0 +1,92 @@
+name: backend-ci
+
+# Reutilizável (ADR 0006). Chamado por ci.yml quando `backend/**` muda.
+# workflow_dispatch permite rodar o backend isolado pela UI.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build, test & analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Única branch de longa duração que o SonarCloud analisa no plano free (a
+      # "main branch" do projeto). Push em outra branch só roda verify/cobertura.
+      # PR do mesmo repo sempre analisa.
+      SONAR_ANALYZED_BRANCH: ${{ vars.SONAR_ANALYZED_BRANCH || 'main' }}
+      # true só em PR vindo de fork (GitHub retém secrets → Sonar não roda).
+      IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Histórico completo para o blame e o "new code" do SonarCloud.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        # Build em JDK 21 porque o scanner do Sonar exige; o bytecode continua
+        # Java 17 (maven-compiler-plugin <release>, ver pom.xml).
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Check SonarCloud configuration
+        # Falha de propósito se a análise é esperada mas o token sumiu — um step
+        # pulado nunca deve parecer verde.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Build, unit + integration tests, coverage
+        # `verify` roda surefire (unit) + failsafe (integração, sobre PostgreSQL
+        # via Testcontainers — Docker está disponível no ubuntu-latest) e o Flyway
+        # aplica as migrações. Gera os dois relatórios JaCoCo lidos pelo Sonar.
+        run: ./mvnw -B --no-transfer-progress verify
+
+      - name: SonarCloud analysis
+        # Coordenadas (org/projectKey) vêm do pom.xml. `qualitygate.wait` reprova
+        # o job se o Quality Gate falhar.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
+        run: >
+          ./mvnw -B --no-transfer-progress
+          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.qualitygate.wait=true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: jacoco-coverage
+          path: |
+            backend/target/site/jacoco/
+            backend/target/site/jacoco-it/
+          if-no-files-found: warn

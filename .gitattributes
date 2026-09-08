@@ -1,3 +1,7 @@
 backend/mvnw text eol=lf
 *.sh text eol=lf
 *.cmd text eol=crlf
+
+# Workflows e YAML de infra: LF sempre — `run:` com CRLF quebra o bash no runner.
+*.yml text eol=lf
+*.yaml text eol=lf
