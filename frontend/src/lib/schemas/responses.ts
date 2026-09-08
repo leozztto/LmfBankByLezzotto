@@ -79,6 +79,20 @@ export const transactionResponseSchema = z
 
 export type TransactionResponse = z.infer<typeof transactionResponseSchema>;
 
+export const transferResponseSchema = z
+  .object({
+    transferId: z.string(),
+    fromAccountId: z.number(),
+    toAccountId: z.number(),
+    amount: moneyField,
+    status: zTxnStatusName,
+    createdAt: z.string(),
+    failureReason: z.string().nullable(),
+  })
+  .passthrough();
+
+export type TransferResponse = z.infer<typeof transferResponseSchema>;
+
 export const bankStatementResponseSchema = z
   .object({
     accountId: z.number(),
