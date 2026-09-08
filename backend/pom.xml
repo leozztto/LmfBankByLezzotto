@@ -43,6 +43,14 @@
 			**/kafka/dto/**,
 			**/exception/**
 		</sonar.coverage.exclusions>
+
+		<!-- java:S4502 (CSRF disabled) em SecurityConfig: decisão consciente. É uma
+		     API stateless cuja única credencial é o JWT no header Authorization, que
+		     o navegador nunca anexa sozinho em requisições cross-site. Justificativa
+		     completa no comentário do próprio SecurityConfig.java. -->
+		<sonar.issue.ignore.multicriteria>csrf</sonar.issue.ignore.multicriteria>
+		<sonar.issue.ignore.multicriteria.csrf.ruleKey>java:S4502</sonar.issue.ignore.multicriteria.csrf.ruleKey>
+		<sonar.issue.ignore.multicriteria.csrf.resourceKey>**/config/SecurityConfig.java</sonar.issue.ignore.multicriteria.csrf.resourceKey>
 	</properties>
 	<dependencies>
 		<dependency>

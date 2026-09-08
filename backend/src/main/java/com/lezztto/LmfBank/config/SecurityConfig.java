@@ -22,6 +22,7 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF desabilitado de propósito — ver comentário abaixo
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
