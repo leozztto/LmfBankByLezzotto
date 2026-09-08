@@ -55,9 +55,7 @@ export const accountFormSchema = z.object({
     }, "Renda inválida"),
   accountType: zAccountType,
   acceptedTerms: z.boolean().refine((v) => v, "É necessário aceitar os termos"),
-  addresses: z
-    .array(addressFormSchema)
-    .min(1, "Informe ao menos um endereço"),
+  addresses: z.array(addressFormSchema).min(1, "Informe ao menos um endereço"),
 });
 
 export type AccountFormValues = z.infer<typeof accountFormSchema>;

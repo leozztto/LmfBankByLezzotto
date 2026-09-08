@@ -40,8 +40,13 @@ const transferBody = (over: Record<string, unknown>) => ({
 });
 
 async function fillAndConfirm(user: ReturnType<typeof userEvent.setup>) {
-  const dest = await screen.findByRole("combobox", { name: "Conta de destino" });
-  await user.selectOptions(dest, await within(dest).findByRole("option", { name: /200-2/ }));
+  const dest = await screen.findByRole("combobox", {
+    name: "Conta de destino",
+  });
+  await user.selectOptions(
+    dest,
+    await within(dest).findByRole("option", { name: /200-2/ }),
+  );
   await user.type(screen.getByLabelText("Valor"), "5000"); // R$ 50,00
   await user.click(screen.getByRole("button", { name: "Transferir" }));
   const dialog = await screen.findByRole("dialog");
@@ -64,7 +69,8 @@ describe("TransferForm", () => {
           {
             status: 422,
             code: "INSUFFICIENT_BALANCE",
-            message: "Saldo insuficiente para conta 1. Saldo atual: 10, valor solicitado: 50",
+            message:
+              "Saldo insuficiente para conta 1. Saldo atual: 10, valor solicitado: 50",
           },
           { status: 422 },
         ),
@@ -84,7 +90,10 @@ describe("TransferForm", () => {
     server.use(
       http.post("/api/transfers", () =>
         HttpResponse.json(
-          transferBody({ status: "FAILED", failureReason: "conta de destino bloqueada" }),
+          transferBody({
+            status: "FAILED",
+            failureReason: "conta de destino bloqueada",
+          }),
           { status: 201 },
         ),
       ),
@@ -114,7 +123,11 @@ describe("TransferForm", () => {
     await fillAndConfirm(user);
 
     await waitFor(() => expect(screen.getByLabelText("Valor")).toHaveValue(""));
-    expect(posted).toMatchObject({ fromAccountId: 1, toAccountId: 2, amount: 50 });
+    expect(posted).toMatchObject({
+      fromAccountId: 1,
+      toAccountId: 2,
+      amount: 50,
+    });
     expect(posted).toHaveProperty("idempotencyKey");
   });
 
@@ -129,8 +142,13 @@ describe("TransferForm", () => {
     );
 
     renderWithProviders(<TransferForm />);
-    const dest = await screen.findByRole("combobox", { name: "Conta de destino" });
-    await user.selectOptions(dest, await within(dest).findByRole("option", { name: /200-2/ }));
+    const dest = await screen.findByRole("combobox", {
+      name: "Conta de destino",
+    });
+    await user.selectOptions(
+      dest,
+      await within(dest).findByRole("option", { name: /200-2/ }),
+    );
     await user.type(screen.getByLabelText("Valor"), "0");
     await user.click(screen.getByRole("button", { name: "Transferir" }));
 

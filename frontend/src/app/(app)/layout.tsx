@@ -6,11 +6,7 @@ import { decodeJwt, isExpired } from "@/lib/auth/jwt";
 import type { Session } from "@/lib/schemas/auth";
 import { AppShell } from "@/components/app-shell";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const token = cookies().get(SESSION_COOKIE)?.value;
 
   if (!token || isExpired(token)) {

@@ -39,6 +39,9 @@ build/
 ### env ###
 .env
 
+### node / ferramentas transversais da raiz ###
+/node_modules/
+
 ### frontend (Next.js) ###
 /frontend/node_modules/
 /frontend/.next/

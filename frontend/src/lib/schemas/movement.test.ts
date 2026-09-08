@@ -61,7 +61,10 @@ describe("transferFormSchema", () => {
   });
 
   it("rejects same source and destination", () => {
-    const r = transferFormSchema.safeParse({ ...validTransfer, toAccountId: 1 });
+    const r = transferFormSchema.safeParse({
+      ...validTransfer,
+      toAccountId: 1,
+    });
     expect(r.success).toBe(false);
     const paths = r.success ? [] : r.error.issues.map((i) => i.path.join("."));
     expect(paths).toContain("toAccountId");

@@ -1,4 +1,8 @@
-import { ApiError, apiErrorFromBody, type ApiErrorBody } from "@/lib/api/errors";
+import {
+  ApiError,
+  apiErrorFromBody,
+  type ApiErrorBody,
+} from "@/lib/api/errors";
 
 /** Anything with a `.parse` — a Zod schema, in practice. Decouples us from
  *  Zod's input-vs-output generic gymnastics on schemas that transform. */

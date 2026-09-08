@@ -75,7 +75,11 @@ describe("accounts api", () => {
     server.use(
       http.post("/api/accounts", () =>
         HttpResponse.json(
-          { status: 409, code: "DOCUMENT_ALREADY_EXISTS", message: "já existe" },
+          {
+            status: 409,
+            code: "DOCUMENT_ALREADY_EXISTS",
+            message: "já existe",
+          },
           { status: 409 },
         ),
       ),

@@ -87,7 +87,9 @@ export function AccountDetail({ id }: { id: number }) {
             {statement.isLoading ? (
               <Skeleton className="h-8 w-40" />
             ) : (
-              <Money value={statement.data?.balance ?? a.balance.availableBalance} />
+              <Money
+                value={statement.data?.balance ?? a.balance.availableBalance}
+              />
             )}
           </CardTitle>
         </CardHeader>

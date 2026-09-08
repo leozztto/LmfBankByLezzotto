@@ -7,7 +7,8 @@ import { server } from "@/test/msw/server";
 let token: string | undefined = "the-jwt";
 vi.mock("next/headers", () => ({
   cookies: () => ({
-    get: (n: string) => (n === "lmf_token" && token ? { value: token } : undefined),
+    get: (n: string) =>
+      n === "lmf_token" && token ? { value: token } : undefined,
   }),
 }));
 

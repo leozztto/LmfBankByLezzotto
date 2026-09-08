@@ -29,11 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardDescription,
@@ -70,7 +66,8 @@ export function MovementForm() {
   function submit() {
     setConfirmOpen(false);
     movement.mutate(form.getValues(), {
-      onSuccess: () => form.reset({ ...form.getValues(), amount: "", description: "" }),
+      onSuccess: () =>
+        form.reset({ ...form.getValues(), amount: "", description: "" }),
     });
   }
 

@@ -271,7 +271,9 @@ export function AccountForm() {
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Aceito os termos de uso e abertura de conta</FormLabel>
+                <FormLabel>
+                  Aceito os termos de uso e abertura de conta
+                </FormLabel>
                 <FormMessage />
               </div>
             </FormItem>

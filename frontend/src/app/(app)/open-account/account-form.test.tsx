@@ -151,10 +151,12 @@ describe("AccountForm", () => {
     const user = userEvent.setup();
 
     expect(screen.queryByText("Endereço 2")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Adicionar endereço" }));
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar endereço" }),
+    );
     expect(screen.getByText("Endereço 2")).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole("button", { name: "Remover" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "Remover" })[0]!);
     expect(screen.queryByText("Endereço 2")).not.toBeInTheDocument();
   });
 });

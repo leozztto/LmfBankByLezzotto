@@ -51,7 +51,8 @@ describe("createTransaction", () => {
           {
             status: 422,
             code: "INSUFFICIENT_BALANCE",
-            message: "Saldo insuficiente para conta 1. Saldo atual: 20, valor solicitado: 50",
+            message:
+              "Saldo insuficiente para conta 1. Saldo atual: 20, valor solicitado: 50",
           },
           { status: 422 },
         ),
@@ -103,7 +104,11 @@ describe("createTransfer", () => {
     server.use(
       http.post("/api/transfers", () =>
         HttpResponse.json(
-          { status: 400, code: "BAD_REQUEST", message: "Source and destination accounts must be different" },
+          {
+            status: 400,
+            code: "BAD_REQUEST",
+            message: "Source and destination accounts must be different",
+          },
           { status: 400 },
         ),
       ),

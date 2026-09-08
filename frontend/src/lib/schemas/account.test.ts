@@ -20,7 +20,15 @@ const validValues: AccountFormValues = {
   accountType: "C",
   acceptedTerms: true,
   addresses: [
-    { ...emptyAddress, zipCode: "01001-000", street: "Praça da Sé", neighborhood: "Sé", number: "100", city: "São Paulo", state: "sp" },
+    {
+      ...emptyAddress,
+      zipCode: "01001-000",
+      street: "Praça da Sé",
+      neighborhood: "Sé",
+      number: "100",
+      city: "São Paulo",
+      state: "sp",
+    },
   ],
 };
 

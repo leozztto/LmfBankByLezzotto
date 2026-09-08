@@ -19,7 +19,11 @@ export async function POST(request: Request) {
     credentials = loginSchema.parse(await request.json());
   } catch {
     return NextResponse.json(
-      { status: 400, code: "VALIDATION_ERROR", message: "Usuário e senha são obrigatórios" },
+      {
+        status: 400,
+        code: "VALIDATION_ERROR",
+        message: "Usuário e senha são obrigatórios",
+      },
       { status: 400 },
     );
   }
@@ -37,7 +41,8 @@ export async function POST(request: Request) {
     return new NextResponse(body, {
       status: upstream.status,
       headers: {
-        "content-type": upstream.headers.get("content-type") ?? "application/json",
+        "content-type":
+          upstream.headers.get("content-type") ?? "application/json",
       },
     });
   }
@@ -47,7 +52,11 @@ export async function POST(request: Request) {
     parsed = loginResponseSchema.parse(JSON.parse(body));
   } catch {
     return NextResponse.json(
-      { status: 502, code: "UPSTREAM", message: "Resposta de login inesperada do backend" },
+      {
+        status: 502,
+        code: "UPSTREAM",
+        message: "Resposta de login inesperada do backend",
+      },
       { status: 502 },
     );
   }

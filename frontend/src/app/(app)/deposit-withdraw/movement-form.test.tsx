@@ -46,7 +46,9 @@ describe("MovementForm", () => {
     useUiStore.setState({ selectedAccountId: 1 });
     server.use(
       http.get("/api/accounts", () => HttpResponse.json([acc(1)])),
-      http.get("/api/accounts/statement", () => HttpResponse.json(statement(20))),
+      http.get("/api/accounts/statement", () =>
+        HttpResponse.json(statement(20)),
+      ),
     );
   });
 
@@ -79,11 +81,18 @@ describe("MovementForm", () => {
     // ConfirmDialog
     const dialog = await screen.findByRole("dialog");
     await user.click(
-      screen.getAllByRole("button", { name: "Depositar" }).find((b) => dialog.contains(b))!,
+      screen
+        .getAllByRole("button", { name: "Depositar" })
+        .find((b) => dialog.contains(b))!,
     );
 
     await waitFor(() => expect(posted).toBeDefined());
-    expect(posted).toMatchObject({ accountId: 1, type: "C", amount: 100, description: "teste" });
+    expect(posted).toMatchObject({
+      accountId: 1,
+      type: "C",
+      amount: 100,
+      description: "teste",
+    });
     expect(posted).toHaveProperty("idempotencyKey");
   });
 
@@ -95,7 +104,8 @@ describe("MovementForm", () => {
           {
             status: 422,
             code: "INSUFFICIENT_BALANCE",
-            message: "Saldo insuficiente para conta 1. Saldo atual: 20, valor solicitado: 50",
+            message:
+              "Saldo insuficiente para conta 1. Saldo atual: 20, valor solicitado: 50",
           },
           { status: 422 },
         ),
@@ -109,10 +119,14 @@ describe("MovementForm", () => {
 
     const dialog = await screen.findByRole("dialog");
     await user.click(
-      screen.getAllByRole("button", { name: "Sacar" }).find((b) => dialog.contains(b))!,
+      screen
+        .getAllByRole("button", { name: "Sacar" })
+        .find((b) => dialog.contains(b))!,
     );
 
-    expect(await screen.findByText(/Saldo insuficiente para conta 1/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Saldo insuficiente para conta 1/),
+    ).toBeInTheDocument();
   });
 
   it("blocks submit when the amount is below the minimum", async () => {

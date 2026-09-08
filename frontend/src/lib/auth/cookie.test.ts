@@ -42,6 +42,9 @@ describe("sessionCookieOptions", () => {
     vi.stubEnv("COOKIE_SECURE", "true");
     vi.resetModules();
     const { sessionCookieOptions } = await import("./cookie");
-    expect(sessionCookieOptions(10)).toMatchObject({ secure: true, maxAge: 10 });
+    expect(sessionCookieOptions(10)).toMatchObject({
+      secure: true,
+      maxAge: 10,
+    });
   });
 });
