@@ -25,6 +25,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
+                // CSRF protection is not needed: this is a stateless API whose only
+                // credential is a signed JWT sent in the `Authorization: Bearer` header.
+                // Browsers never attach that header automatically to cross-site requests,
+                // and the backend reads no session cookie or HTTP Basic credential, so
+                // there is no ambient authority for a CSRF attack to ride on. The
+                // httpOnly cookie in ADR 0007 lives only between the browser and the Next
+                // BFF; the backend still only ever sees a Bearer header. This MUST be
+                // revisited if cookie- or session-based authentication is ever added.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
