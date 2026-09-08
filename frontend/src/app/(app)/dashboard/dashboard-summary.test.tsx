@@ -47,4 +47,27 @@ describe("DashboardSummary", () => {
     renderWithProviders(<DashboardSummary />);
     expect(await screen.findByText("0")).toBeInTheDocument();
   });
+
+  it("shows a loading skeleton before the accounts arrive", () => {
+    server.use(
+      http.get("/api/accounts", async () => HttpResponse.json([]), {
+        once: true,
+      }),
+    );
+    const { container } = renderWithProviders(<DashboardSummary />);
+    expect(container.querySelector(".animate-pulse")).not.toBeNull();
+  });
+
+  it("falls back to 0 when the accounts query errors", async () => {
+    server.use(
+      http.get("/api/accounts", () =>
+        HttpResponse.json(
+          { status: 500, code: "X", message: "y" },
+          { status: 500 },
+        ),
+      ),
+    );
+    renderWithProviders(<DashboardSummary />);
+    expect(await screen.findByText("0")).toBeInTheDocument();
+  });
 });

@@ -45,6 +45,18 @@ describe("POST /api/auth/login", () => {
     expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
+  it("returns 502 when the backend login response fails the schema", async () => {
+    server.use(
+      http.post("http://localhost:8080/auth/login", () =>
+        HttpResponse.json({ unexpected: "shape" }),
+      ),
+    );
+    const res = await callLogin({ username: "bob", password: "x" });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toMatchObject({ code: "UPSTREAM" });
+    expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
   it("passes a backend 401 straight through, no cookie", async () => {
     server.use(
       http.post("http://localhost:8080/auth/login", () =>
@@ -57,5 +69,35 @@ describe("POST /api/auth/login", () => {
     const res = await callLogin({ username: "bob", password: "x" });
     expect(res.status).toBe(401);
     expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
+  it("passes a backend error through even without an upstream content-type", async () => {
+    server.use(
+      http.post(
+        "http://localhost:8080/auth/login",
+        () => new HttpResponse(null, { status: 403 }),
+      ),
+    );
+    const res = await callLogin({ username: "bob", password: "x" });
+    expect(res.status).toBe(403);
+    expect(res.headers.get("content-type")).toBe("application/json");
+    expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the submitted username when the token has no sub", async () => {
+    server.use(
+      http.post("http://localhost:8080/auth/login", () =>
+        HttpResponse.json({
+          token: "not.a.jwt",
+          tokenType: "Bearer",
+          expiresIn: 3600,
+        }),
+      ),
+    );
+    const res = await callLogin({ username: "bob", password: "x" });
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.username).toBe("bob");
+    expect(cookieStore.set).toHaveBeenCalled();
   });
 });

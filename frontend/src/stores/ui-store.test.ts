@@ -29,4 +29,12 @@ describe("uiStore", () => {
     useUiStore.persist.rehydrate();
     expect(useUiStore.getState().selectedAccountId).toBe(99);
   });
+
+  it("clearStorage removes the persisted key", () => {
+    useUiStore.getState().setSelectedAccount(3);
+    expect(window.localStorage.getItem("lmf-ui")).not.toBeNull();
+
+    useUiStore.persist.clearStorage();
+    expect(window.localStorage.getItem("lmf-ui")).toBeNull();
+  });
 });

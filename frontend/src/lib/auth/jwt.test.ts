@@ -19,6 +19,10 @@ describe("decodeJwt", () => {
     expect(decodeJwt("a.b")).toBeNull();
   });
 
+  it("returns null when the payload segment is empty", () => {
+    expect(decodeJwt("header..sig")).toBeNull();
+  });
+
   it("returns null when the payload is not valid JSON", () => {
     expect(decodeJwt("header.%%%.sig")).toBeNull();
   });

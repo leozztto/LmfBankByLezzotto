@@ -85,4 +85,19 @@ describe("toAccountPayload", () => {
     expect(payload).not.toHaveProperty("accountStatus");
     expect(payload).not.toHaveProperty("accountNumber");
   });
+
+  it("defaults a missing complement to '' and a blank country to 'BR'", () => {
+    const payload = toAccountPayload({
+      ...validValues,
+      addresses: [
+        {
+          ...validValues.addresses[0]!,
+          complement: undefined as unknown as string,
+          country: "",
+        },
+      ],
+    });
+    expect(payload.addresses[0]!.complement).toBe("");
+    expect(payload.addresses[0]!.country).toBe("BR");
+  });
 });

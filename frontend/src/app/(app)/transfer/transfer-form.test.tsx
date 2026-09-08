@@ -131,6 +131,19 @@ describe("TransferForm", () => {
     expect(posted).toHaveProperty("idempotencyKey");
   });
 
+  it("defaults both account selects to the placeholder when no account is selected", async () => {
+    useUiStore.setState({ selectedAccountId: null });
+
+    renderWithProviders(<TransferForm />);
+
+    const origem = await screen.findByRole("combobox", {
+      name: "Conta de origem",
+    });
+    const destino = screen.getByRole("combobox", { name: "Conta de destino" });
+    expect(origem).toHaveValue("");
+    expect(destino).toHaveValue("");
+  });
+
   it("blocks submit when amount is below the minimum", async () => {
     const user = userEvent.setup();
     let called = false;

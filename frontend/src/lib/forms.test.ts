@@ -10,6 +10,15 @@ describe("applyFieldErrors", () => {
     expect(setError).not.toHaveBeenCalled();
   });
 
+  it("returns true without touching setError when fieldErrors is absent", () => {
+    const setError = vi.fn();
+    const err = new ValidationError("v", {});
+    (err as { fieldErrors?: unknown }).fieldErrors = undefined;
+
+    expect(applyFieldErrors(err, setError)).toBe(true);
+    expect(setError).not.toHaveBeenCalled();
+  });
+
   it("pushes each fieldError and converts Spring array paths to RHF paths", () => {
     const setError = vi.fn();
     const err = new ValidationError("v", {
