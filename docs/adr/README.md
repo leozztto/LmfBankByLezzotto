@@ -31,3 +31,4 @@ enxuto:
 | [0004](0004-postgresql-como-banco-de-dados-no-compose.md) | PostgreSQL como banco de dados, provisionado no docker-compose | Aceito |
 | [0005](0005-flyway-para-migracoes-de-schema.md) | Flyway para versionamento e migração do schema | Aceito |
 | [0006](0006-ci-e-sonarcloud-por-modulo.md) | CI e SonarCloud independentes por módulo (orquestrador + workflows reutilizáveis) | Aceito |
+| [0007](0007-token-jwt-cookie-httponly-bff-next.md) | Armazenamento do token JWT: cookie httpOnly + BFF no Next | Aceito |

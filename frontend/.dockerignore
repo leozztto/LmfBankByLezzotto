@@ -2,6 +2,7 @@ node_modules
 .next
 coverage
 .git
+.env*.local
 Dockerfile
 .dockerignore
 npm-debug.log*
