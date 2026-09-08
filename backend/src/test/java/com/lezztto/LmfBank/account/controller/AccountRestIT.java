@@ -52,10 +52,7 @@ class AccountRestIT extends AbstractIntegrationTest {
                   "profession": "Engenheira",
                   "monthlyIncome": 12000.00,
                   "accountType": "C",
-                  "agency": "0001",
                   "acceptedTerms": true,
-                  "createdAt": "2026-01-10T09:00:00",
-                  "accountStatus": "A",
                   "addresses": [
                     { "zipCode": "01001000", "street": "Praça da Sé", "neighborhood": "Sé",
                       "number": "100", "city": "São Paulo", "state": "SP", "country": "BR",
@@ -79,6 +76,9 @@ class AccountRestIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.maskedEmail").value("ma*********@example.com"))
                 .andExpect(jsonPath("$.maskedPhone").value("(11) *****-4321"))
                 .andExpect(jsonPath("$.accountNumber").value(org.hamcrest.Matchers.matchesPattern("\\d{8}-\\d")))
+                .andExpect(jsonPath("$.agency").value("0001"))
+                .andExpect(jsonPath("$.accountStatus").value("A"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
 
         long id = accountId(response);
@@ -86,6 +86,38 @@ class AccountRestIT extends AbstractIntegrationTest {
         assertThat(persisted.getBalance()).isNotNull();
         assertThat(persisted.getBalance().getAvailableBalance()).isEqualByComparingTo("0");
         assertThat(persisted.getAddresses()).hasSize(1);
+        assertThat(persisted.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("POST /accounts sem campo obrigatório retorna 400 com fieldErrors")
+    void rejectsInvalidBody() throws Exception {
+        String noFullName = accountBody("44455566677", "invalid@example.com")
+                .replace("\"fullName\": \"Maria Silva\",", "");
+
+        mockMvc.perform(post("/accounts").header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(noFullName))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors.fullName").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /accounts lista as contas (401 sem token, 200 array com token)")
+    void listAccounts() throws Exception {
+        mockMvc.perform(get("/accounts"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/accounts").header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(accountBody("50505050505", "list@example.com")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/accounts").header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].accountId").isNotEmpty());
     }
 
     @Test

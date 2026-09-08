@@ -8,10 +8,14 @@ import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -46,6 +50,31 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, "INSUFFICIENT_BALANCE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            fieldErrors.putIfAbsent(
+                    fieldError.getField(),
+                    fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "invalid value"
+            );
+        }
+
+        ApiError error = ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .code("VALIDATION_ERROR")
+                .message("Falha de validação")
+                .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .fieldErrors(fieldErrors)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

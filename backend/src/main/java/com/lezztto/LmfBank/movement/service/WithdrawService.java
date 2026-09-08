@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -49,8 +48,9 @@ public class WithdrawService {
                 account.getId(),
                 TransactionType.DEBIT,
                 transactionRequest.getAmount(),
-                "Withdraw",
-                UUID.randomUUID()
+                transactionRequest.getDescription(),
+                transactionRequest.getIdempotencyKey(),
+                null
         );
 
         balanceProjectionService.refresh(account.getId());

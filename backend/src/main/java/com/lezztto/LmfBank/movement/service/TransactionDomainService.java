@@ -19,15 +19,25 @@ public class TransactionDomainService {
 
     private final TransactionRepository transactionRepository;
 
+    /**
+     * Persists a ledger entry, keyed by an explicit {@code idempotencyKey}. A second call
+     * with the same key returns the existing row instead of writing a new one.
+     *
+     * <ul>
+     *   <li>standalone deposit/withdraw: the key is the client-supplied
+     *       {@code TransactionRequest.idempotencyKey}, {@code transferId} is {@code null};</li>
+     *   <li>the two legs of a transfer: the key is {@code "<transferId>-DEBIT"} /
+     *       {@code "<transferId>-CREDIT"}, so a retried transfer never double-posts a leg.</li>
+     * </ul>
+     */
     public Transaction create(
             Long accountId,
             TransactionType transactionType,
             BigDecimal amount,
             String description,
+            String idempotencyKey,
             UUID transferId
     ) {
-
-        String idempotencyKey = buildIdempotencyKey(transferId, transactionType);
 
         return transactionRepository.findByIdempotencyKey(idempotencyKey)
                 .orElseGet(() -> {
@@ -48,7 +58,8 @@ public class TransactionDomainService {
                 });
     }
 
-    private String buildIdempotencyKey(UUID transferId, TransactionType transactionType) {
+    /** Idempotency key for a single leg of a transfer. */
+    public static String transferLegKey(UUID transferId, TransactionType transactionType) {
         return transferId + "-" + transactionType.name();
     }
 }

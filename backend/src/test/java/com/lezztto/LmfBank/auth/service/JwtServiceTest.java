@@ -37,6 +37,12 @@ class JwtServiceTest {
     }
 
     @Test
+    @DisplayName("getExpiresInSeconds converte a expiração em ms para segundos")
+    void expiresInSeconds() {
+        assertThat(jwtService.getExpiresInSeconds()).isEqualTo(3_600L);
+    }
+
+    @Test
     @DisplayName("isValid: false para token assinado com outra chave")
     void invalidForWrongSignature() {
         JwtService other = new JwtService();

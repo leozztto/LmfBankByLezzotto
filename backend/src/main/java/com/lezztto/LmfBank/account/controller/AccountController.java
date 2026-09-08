@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(
         name = "Accounts",
         description = "Operations related to bank account management"
@@ -49,6 +51,16 @@ public class AccountController {
     public AccountResponse create(@RequestBody @Valid AccountDto accountDto) {
 
         return accountService.create(accountDto);
+    }
+
+    @Operation(
+            summary = "List accounts",
+            description = "Returns every registered account (no pagination — demo scope)"
+    )
+    @ApiResponse(responseCode = "200", description = "Accounts listed successfully")
+    @GetMapping
+    public List<AccountResponse> list() {
+        return accountService.findAll();
     }
 
     @Operation(

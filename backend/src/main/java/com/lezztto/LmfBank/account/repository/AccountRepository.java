@@ -7,12 +7,21 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     boolean existsByDocumentNumber(String documentNumber);
+
+    @Query("""
+    SELECT DISTINCT a
+    FROM Account a
+    LEFT JOIN FETCH a.addresses
+    LEFT JOIN FETCH a.balance
+    """)
+    List<Account> findAllWithRelations();
 
     @Query("""
     SELECT a

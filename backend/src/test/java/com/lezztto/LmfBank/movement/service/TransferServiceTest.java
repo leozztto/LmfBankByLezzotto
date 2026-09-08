@@ -99,8 +99,8 @@ class TransferServiceTest {
 
         ArgumentCaptor<UUID> debitTransferId = ArgumentCaptor.forClass(UUID.class);
         ArgumentCaptor<UUID> creditTransferId = ArgumentCaptor.forClass(UUID.class);
-        verify(transactionDomainService).create(eq(FROM), eq(TransactionType.DEBIT), eq(amount), anyString(), debitTransferId.capture());
-        verify(transactionDomainService).create(eq(TO), eq(TransactionType.CREDIT), eq(amount), anyString(), creditTransferId.capture());
+        verify(transactionDomainService).create(eq(FROM), eq(TransactionType.DEBIT), eq(amount), anyString(), anyString(), debitTransferId.capture());
+        verify(transactionDomainService).create(eq(TO), eq(TransactionType.CREDIT), eq(amount), anyString(), anyString(), creditTransferId.capture());
         assertThat(debitTransferId.getValue()).isEqualTo(creditTransferId.getValue());
     }
 
@@ -183,7 +183,7 @@ class TransferServiceTest {
 
         transferService.createTransfer(request(FROM, TO, amount));
 
-        verify(transactionDomainService).create(eq(FROM), eq(TransactionType.DEBIT), eq(amount), anyString(), any());
+        verify(transactionDomainService).create(eq(FROM), eq(TransactionType.DEBIT), eq(amount), anyString(), anyString(), any());
     }
 
     @Test
@@ -210,7 +210,7 @@ class TransferServiceTest {
         when(idempotencyService.tryLock(KEY)).thenReturn(true);
         stubActiveAccounts();
         when(balanceCalculatorService.calculate(FROM)).thenReturn(new BigDecimal("200.00"));
-        when(transactionDomainService.create(eq(FROM), eq(TransactionType.DEBIT), any(), anyString(), any()))
+        when(transactionDomainService.create(eq(FROM), eq(TransactionType.DEBIT), any(), anyString(), anyString(), any()))
                 .thenThrow(new RuntimeException("ledger indisponível"));
 
         assertThatThrownBy(() -> transferService.createTransfer(request(FROM, TO, new BigDecimal("10.00"))))

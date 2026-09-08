@@ -38,10 +38,14 @@ class MovementRestIT extends AbstractIntegrationTest {
     }
 
     private String creditBody(Long accountId, String amount) {
+        return creditBody(accountId, amount, "Deposit", UUID.randomUUID().toString());
+    }
+
+    private String creditBody(Long accountId, String amount, String description, String idempotencyKey) {
         return """
-                { "accountId": %d, "type": "C", "amount": %s, "description": "Deposit",
+                { "accountId": %d, "type": "C", "amount": %s, "description": "%s",
                   "idempotencyKey": "%s" }
-                """.formatted(accountId, amount, UUID.randomUUID());
+                """.formatted(accountId, amount, description, idempotencyKey);
     }
 
     private String debitBody(Long accountId, String amount) {
@@ -100,19 +104,43 @@ class MovementRestIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /transactions com valor inválido (0): hoje retorna 500 (gap de tratamento de validação)")
-    void invalidAmountIsNotMappedToBadRequest() throws Exception {
+    @DisplayName("POST /transactions com valor inválido (0): retorna 400 VALIDATION_ERROR com fieldErrors")
+    void invalidAmountIsMappedToBadRequest() throws Exception {
         Long accountId = persistActiveAccount();
 
-        // @DecimalMin("0.01") é violado, mas o GlobalExceptionHandler não trata
-        // MethodArgumentNotValidException, então o handler genérico devolve 500.
-        // Este teste fixa o comportamento atual; ao mapear a validação para 400,
-        // troque a expectativa abaixo.
         mockMvc.perform(post("/transactions")
                         .header("Authorization", bearer)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(creditBody(accountId, "0")))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.fieldErrors.amount").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("POST /transactions usa a descrição do cliente e deduplica pela idempotencyKey")
+    void usesClientDescriptionAndDeduplicates() throws Exception {
+        Long accountId = persistActiveAccount();
+        String key = UUID.randomUUID().toString();
+
+        String first = mockMvc.perform(post("/transactions")
+                        .header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(creditBody(accountId, "40.00", "aluguel", key)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.description").value("aluguel"))
+                .andReturn().getResponse().getContentAsString();
+
+        String replay = mockMvc.perform(post("/transactions")
+                        .header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(creditBody(accountId, "40.00", "aluguel", key)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(com.jayway.jsonpath.JsonPath.read(replay, "$.transactionId").toString())
+                .isEqualTo(com.jayway.jsonpath.JsonPath.read(first, "$.transactionId").toString());
+        assertThat(transactionRepository.findByAccountIdAndType(accountId, TransactionType.CREDIT)).hasSize(1);
     }
 
     @Test

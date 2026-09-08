@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -90,14 +91,14 @@ class DepositServiceTest {
         TransactionResponse expected = TransactionResponse.builder().transactionId(persisted.getId()).build();
 
         when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-        when(transactionDomainService.create(eq(ACCOUNT_ID), eq(TransactionType.CREDIT), eq(amount), eq("Deposit"), any(UUID.class)))
+        when(transactionDomainService.create(eq(ACCOUNT_ID), eq(TransactionType.CREDIT), eq(amount), eq("Deposit"), eq(request.getIdempotencyKey()), isNull()))
                 .thenReturn(persisted);
         when(transactionMapper.toResponse(persisted)).thenReturn(expected);
 
         TransactionResponse result = depositService.process(request);
 
         assertThat(result).isSameAs(expected);
-        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.CREDIT), eq(amount), eq("Deposit"), any(UUID.class));
+        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.CREDIT), eq(amount), eq("Deposit"), eq(request.getIdempotencyKey()), isNull());
     }
 
     @Test
@@ -105,7 +106,7 @@ class DepositServiceTest {
     void shouldNotCheckBalanceForCredit() {
         BigDecimal amount = new BigDecimal("10.00");
         when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedCredit(amount));
 
         depositService.process(creditRequest(amount));
@@ -118,7 +119,7 @@ class DepositServiceTest {
     @DisplayName("valida o status da conta antes de gerar a transação")
     void shouldValidateAccountStatus() {
         when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedCredit(BigDecimal.TEN));
 
         depositService.process(creditRequest(BigDecimal.TEN));
@@ -146,7 +147,7 @@ class DepositServiceTest {
     @DisplayName("atualiza a projeção de saldo da conta após o crédito")
     void shouldRefreshBalanceProjection() {
         when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedCredit(BigDecimal.TEN));
 
         depositService.process(creditRequest(BigDecimal.TEN));
@@ -159,21 +160,22 @@ class DepositServiceTest {
     class Metadata {
 
         @Test
-        @DisplayName("usa a descrição fixa \"Deposit\" e um transferId aleatório próprio")
-        void shouldUseDepositDescription() {
+        @DisplayName("repassa a descrição e a chave de idempotência do request, sem transferId")
+        void shouldForwardRequestDescriptionAndKey() {
+            TransactionRequest request = creditRequest(BigDecimal.ONE);
             when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-            when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+            when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                     .thenReturn(persistedCredit(BigDecimal.ONE));
 
-            depositService.process(creditRequest(BigDecimal.ONE));
+            depositService.process(request);
 
             ArgumentCaptor<String> description = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<UUID> transferId = ArgumentCaptor.forClass(UUID.class);
+            ArgumentCaptor<String> key = ArgumentCaptor.forClass(String.class);
             verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.CREDIT), any(BigDecimal.class),
-                    description.capture(), transferId.capture());
+                    description.capture(), key.capture(), isNull());
 
-            assertThat(description.getValue()).isEqualTo("Deposit");
-            assertThat(transferId.getValue()).isNotNull();
+            assertThat(description.getValue()).isEqualTo(request.getDescription());
+            assertThat(key.getValue()).isEqualTo(request.getIdempotencyKey());
         }
     }
 
@@ -181,12 +183,12 @@ class DepositServiceTest {
     @DisplayName("nunca gera transação de DÉBITO no fluxo de depósito")
     void shouldNeverCreateDebit() {
         when(accountService.findByIdAccount(ACCOUNT_ID)).thenReturn(activeAccount());
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedCredit(BigDecimal.TEN));
 
         depositService.process(creditRequest(BigDecimal.TEN));
 
         verify(transactionDomainService, never())
-                .create(any(), eq(TransactionType.DEBIT), any(), anyString(), any());
+                .create(any(), eq(TransactionType.DEBIT), any(), anyString(), anyString(), any());
     }
 }
