@@ -63,6 +63,16 @@ class AccountRestIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /accounts com JSON malformado retorna 400 BAD_REQUEST")
+    void rejectsMalformedJson() throws Exception {
+        mockMvc.perform(post("/accounts").header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ not json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+    }
+
+    @Test
     @DisplayName("POST /accounts cria a conta, gera número, mascara dados e persiste o saldo zerado")
     void createsAccount() throws Exception {
         String response = mockMvc.perform(post("/accounts")

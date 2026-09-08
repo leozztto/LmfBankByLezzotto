@@ -41,9 +41,19 @@ export const pastDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
   .refine((v) => new Date(v) < new Date(), "Data deve ser no passado");
 
-/** "1.234,56" or "1234.56" -> "1234.56" as a non-negative number string. */
+/** "R$ 1.234,56" / "1.234,56" / "1234.56" -> 1234.56 (NaN if unparseable). */
+export function parseMoney(value: string): number {
+  const normalized = value
+    .replace(/\s|R\$/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/** Zod field for a BR-formatted currency string -> non-negative number. */
 export const money = z
   .string()
   .min(1, "Informe um valor")
-  .transform((s) => s.replace(/\s|R\$/g, "").replace(/\./g, "").replace(",", "."))
-  .pipe(z.coerce.number().nonnegative("Valor não pode ser negativo"));
+  .transform(parseMoney)
+  .refine((n) => Number.isFinite(n) && n >= 0, "Valor inválido");

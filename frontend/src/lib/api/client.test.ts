@@ -56,9 +56,7 @@ describe("apiFetch", () => {
         ),
       ),
     );
-    const err = await apiFetch("accounts", { method: "POST", body: {} }).catch(
-      (e) => e,
-    );
+    const err = (await apiFetch("accounts", { method: "POST", body: {} }).catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ValidationError);
     expect(err.fieldErrors).toEqual({
       email: "must be a well-formed email address",
@@ -85,7 +83,7 @@ describe("apiFetch", () => {
         HttpResponse.json({ status: 401, code: "UNAUTHORIZED", message: "no" }, { status: 401 }),
       ),
     );
-    const err = await apiFetch("secure").catch((e) => e);
+    const err = (await apiFetch("secure").catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(401);
   });
@@ -96,7 +94,7 @@ describe("apiFetch", () => {
         new HttpResponse("502 Bad Gateway", { status: 502 }),
       ),
     );
-    const err = await apiFetch("boom").catch((e) => e);
+    const err = (await apiFetch("boom").catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ApiError);
     expect(err.code).toBe("UPSTREAM");
   });
