@@ -42,3 +42,44 @@ export function toTransactionPayload(
     idempotencyKey,
   };
 }
+
+// ---- transfer ----
+
+export const transferFormSchema = z
+  .object({
+    fromAccountId: z.number().int().positive("Selecione a conta de origem"),
+    toAccountId: z.number().int().positive("Selecione a conta de destino"),
+    amount: z
+      .string()
+      .min(1, "Informe o valor")
+      .refine((v) => {
+        const n = parseMoney(v);
+        return Number.isFinite(n) && n >= 0.01;
+      }, "Valor mínimo R$ 0,01"),
+  })
+  .refine((v) => v.fromAccountId !== v.toAccountId, {
+    path: ["toAccountId"],
+    message: "Escolha uma conta diferente da origem",
+  });
+
+export type TransferFormValues = z.infer<typeof transferFormSchema>;
+
+export interface TransferPayload {
+  fromAccountId: number;
+  toAccountId: number;
+  amount: number;
+  /** must be a UUID string (backend `@NotNull UUID`) */
+  idempotencyKey: string;
+}
+
+export function toTransferPayload(
+  v: TransferFormValues,
+  idempotencyKey: string,
+): TransferPayload {
+  return {
+    fromAccountId: v.fromAccountId,
+    toAccountId: v.toAccountId,
+    amount: parseMoney(v.amount),
+    idempotencyKey,
+  };
+}

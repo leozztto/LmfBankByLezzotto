@@ -1,47 +1,52 @@
 "use client";
 
 import { useAccountsQuery } from "@/hooks/use-accounts";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 /**
- * Reusable account picker for the movement / transfer forms. Value is the
- * account id (as a string, since Radix Select works with strings).
+ * Account picker for the movement / transfer / statement forms. A native
+ * `<select>` on purpose — it is fully keyboard/screen-reader friendly and works
+ * everywhere (including tests) without a portal.
  */
 export function AccountSelect({
   value,
   onChange,
   placeholder = "Selecione a conta",
   exclude,
+  "aria-label": ariaLabel,
+  id,
+  className,
 }: {
   value: number | null;
   onChange: (id: number) => void;
   placeholder?: string;
   exclude?: number | null;
+  "aria-label"?: string;
+  id?: string;
+  className?: string;
 }) {
   const { data: accounts } = useAccountsQuery();
   const options = (accounts ?? []).filter((a) => a.accountId !== exclude);
 
   return (
-    <Select
-      value={value ? String(value) : undefined}
-      onValueChange={(v) => onChange(Number(v))}
+    <select
+      id={id}
+      aria-label={ariaLabel}
+      value={value ?? ""}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className={cn(
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
     >
-      <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((a) => (
-          <SelectItem key={a.accountId} value={String(a.accountId)}>
-            {a.accountNumber} · {a.fullName}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <option value="" disabled>
+        {placeholder}
+      </option>
+      {options.map((a) => (
+        <option key={a.accountId} value={a.accountId}>
+          {a.accountNumber} · {a.fullName}
+        </option>
+      ))}
+    </select>
   );
 }

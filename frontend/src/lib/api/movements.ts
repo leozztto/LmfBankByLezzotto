@@ -1,8 +1,13 @@
 import { apiFetch } from "@/lib/api/client";
-import type { TransactionPayload } from "@/lib/schemas/movement";
+import type {
+  TransactionPayload,
+  TransferPayload,
+} from "@/lib/schemas/movement";
 import {
   transactionResponseSchema,
+  transferResponseSchema,
   type TransactionResponse,
+  type TransferResponse,
 } from "@/lib/schemas/responses";
 
 /**
@@ -20,4 +25,19 @@ export function createTransaction(
   );
 }
 
-export type { TransactionResponse };
+/**
+ * POST /transfers. On an idempotent replay the backend returns 201 with the
+ * ORIGINAL transfer (no 409) — the caller must check `status`/`failureReason`
+ * to know it actually succeeded.
+ */
+export function createTransfer(
+  payload: TransferPayload,
+): Promise<TransferResponse> {
+  return apiFetch(
+    "transfers",
+    { method: "POST", body: payload },
+    transferResponseSchema,
+  );
+}
+
+export type { TransactionResponse, TransferResponse };

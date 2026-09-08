@@ -44,6 +44,17 @@ export class ValidationError extends ApiError {
   }
 }
 
+/**
+ * A transfer that came back `status: "FAILED"` (or an idempotent replay of one).
+ * The HTTP call was 201, but the operation did not succeed.
+ */
+export class TransferFailedError extends ApiError {
+  constructor(reason: string | null) {
+    super(422, "TRANSFER_FAILED", reason ?? "A transferência falhou");
+    this.name = "TransferFailedError";
+  }
+}
+
 export function apiErrorFromBody(
   status: number,
   body: ApiErrorBody,

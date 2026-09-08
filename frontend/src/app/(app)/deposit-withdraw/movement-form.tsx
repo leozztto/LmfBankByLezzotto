@@ -119,15 +119,14 @@ export function MovementForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Conta</FormLabel>
-                <FormControl>
-                  <AccountSelect
-                    value={field.value || null}
-                    onChange={(id) => {
-                      field.onChange(id);
-                      setSelectedAccount(id);
-                    }}
-                  />
-                </FormControl>
+                <AccountSelect
+                  aria-label="Conta"
+                  value={field.value || null}
+                  onChange={(id) => {
+                    field.onChange(id);
+                    setSelectedAccount(id);
+                  }}
+                />
                 <FormMessage />
               </FormItem>
             )}
