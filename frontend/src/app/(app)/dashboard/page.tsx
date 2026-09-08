@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { DashboardSummary } from "./dashboard-summary";
 
 export default function DashboardPage() {
   return (
@@ -15,18 +9,7 @@ export default function DashboardPage() {
           Fluxo bancário — abrir conta, movimentar e consultar extrato.
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Bem-vindo</CardTitle>
-          <CardDescription>
-            As telas do fluxo completo chegam nos próximos PRs da Fase 3.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Use o menu à esquerda para navegar.
-        </CardContent>
-      </Card>
+      <DashboardSummary />
     </div>
   );
 }
