@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let token: string | undefined;
 const cookieStore = {
-  get: (name: string) => (name === "lmf_token" && token ? { value: token } : undefined),
+  get: (name: string) =>
+    name === "lmf_token" && token ? { value: token } : undefined,
   set: vi.fn(),
 };
 vi.mock("next/headers", () => ({ cookies: () => cookieStore }));
 
 function jwt(payload: Record<string, unknown>) {
-  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const b64 = (o: unknown) =>
+    Buffer.from(JSON.stringify(o)).toString("base64url");
   return `${b64({ alg: "HS256" })}.${b64(payload)}.sig`;
 }
 
@@ -36,6 +38,10 @@ describe("GET /api/auth/session", () => {
     token = jwt({ sub: "carol", exp: Math.floor(Date.now() / 1000) - 10 });
     const { GET } = await import("./route");
     expect(await (await GET()).json()).toEqual({ authenticated: false });
-    expect(cookieStore.set).toHaveBeenCalledWith("lmf_token", "", expect.any(Object));
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      "lmf_token",
+      "",
+      expect.any(Object),
+    );
   });
 });

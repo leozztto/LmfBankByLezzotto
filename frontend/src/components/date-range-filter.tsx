@@ -54,7 +54,11 @@ export function DateRangeFilter({
           className="w-40"
         />
       </div>
-      <Button type="submit" variant="secondary" disabled={!bothSet || invalidOrder}>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={!bothSet || invalidOrder}
+      >
         Aplicar
       </Button>
       {value && (

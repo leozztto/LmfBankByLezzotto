@@ -1,8 +1,4 @@
-import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
-} from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { ApiError, ValidationError } from "@/lib/api/errors";
 import { notify } from "@/lib/notify";

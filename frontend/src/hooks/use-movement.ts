@@ -24,7 +24,9 @@ export function useMovement() {
       createTransaction(toTransactionPayload(values, keyRef.current)),
     onSuccess: async (txn, values) => {
       keyRef.current = crypto.randomUUID();
-      await queryClient.invalidateQueries({ queryKey: ["statement", values.accountId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["statement", values.accountId],
+      });
       await queryClient.invalidateQueries({
         queryKey: queryKeys.accounts.detail(values.accountId),
       });

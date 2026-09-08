@@ -61,7 +61,7 @@ describe("bankStatementResponseSchema", () => {
       ],
     });
     expect(parsed.balance).toBe("99.9");
-    expect(parsed.transactions[0].amount).toBe("10");
-    expect(parsed.transactions[0].type).toBe("DEBIT");
+    expect(parsed.transactions[0]!.amount).toBe("10");
+    expect(parsed.transactions[0]!.type).toBe("DEBIT");
   });
 });

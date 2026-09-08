@@ -54,7 +54,12 @@ describe("StatementTable", () => {
           endDate: null,
           transactions: [
             txn({ type: "CREDIT", amount: 200, description: "salario" }),
-            txn({ type: "DEBIT", amount: 50, description: "saque", status: "COMPLETED" }),
+            txn({
+              type: "DEBIT",
+              amount: 50,
+              description: "saque",
+              status: "COMPLETED",
+            }),
           ],
         }),
       ),

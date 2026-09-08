@@ -17,7 +17,9 @@ describe("authStore", () => {
   });
 
   it("selectors read the session", () => {
-    useAuthStore.setState({ session: { authenticated: true, username: "carol" } });
+    useAuthStore.setState({
+      session: { authenticated: true, username: "carol" },
+    });
     const s = useAuthStore.getState();
     expect(selectIsAuthenticated(s)).toBe(true);
     expect(selectUsername(s)).toBe("carol");

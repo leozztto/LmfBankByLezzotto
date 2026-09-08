@@ -58,7 +58,13 @@ describe("AccountDetail", () => {
     server.use(
       http.get("/api/accounts/5", () => HttpResponse.json(account)),
       http.get("/api/accounts/statement", () =>
-        HttpResponse.json({ accountId: 5, balance: 0, startDate: null, endDate: null, transactions: [] }),
+        HttpResponse.json({
+          accountId: 5,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [],
+        }),
       ),
     );
 
@@ -76,7 +82,13 @@ describe("AccountDetail", () => {
         ),
       ),
       http.get("/api/accounts/statement", () =>
-        HttpResponse.json({ accountId: 999, balance: 0, startDate: null, endDate: null, transactions: [] }),
+        HttpResponse.json({
+          accountId: 999,
+          balance: 0,
+          startDate: null,
+          endDate: null,
+          transactions: [],
+        }),
       ),
     );
 

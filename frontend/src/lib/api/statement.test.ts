@@ -37,7 +37,7 @@ describe("getStatement", () => {
     expect(new URL(url).searchParams.get("accountId")).toBe("1");
     expect(new URL(url).searchParams.has("startDate")).toBe(false);
     expect(res.balance).toBe("150.5");
-    expect(res.transactions[0].amount).toBe("150.5");
+    expect(res.transactions[0]!.amount).toBe("150.5");
   });
 
   it("adds startDate/endDate when a range is given", async () => {
@@ -45,7 +45,11 @@ describe("getStatement", () => {
     server.use(
       http.get("/api/accounts/statement", ({ request }) => {
         url = request.url;
-        return HttpResponse.json({ ...statementJson, startDate: "2026-01-01", endDate: "2026-02-01" });
+        return HttpResponse.json({
+          ...statementJson,
+          startDate: "2026-01-01",
+          endDate: "2026-02-01",
+        });
       }),
     );
 

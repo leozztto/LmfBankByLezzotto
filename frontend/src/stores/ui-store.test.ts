@@ -18,7 +18,7 @@ describe("uiStore", () => {
   it("persists to localStorage under lmf-ui", () => {
     useUiStore.getState().setSelectedAccount(7);
     const raw = window.localStorage.getItem("lmf-ui");
-    expect(raw).toContain("\"selectedAccountId\":7");
+    expect(raw).toContain('"selectedAccountId":7');
   });
 
   it("rehydrates from an existing localStorage value", async () => {

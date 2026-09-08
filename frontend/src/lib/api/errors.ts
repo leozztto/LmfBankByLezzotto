@@ -55,10 +55,7 @@ export class TransferFailedError extends ApiError {
   }
 }
 
-export function apiErrorFromBody(
-  status: number,
-  body: ApiErrorBody,
-): ApiError {
+export function apiErrorFromBody(status: number, body: ApiErrorBody): ApiError {
   const message = body.message ?? "Erro inesperado";
   if (body.code === "VALIDATION_ERROR" || body.fieldErrors) {
     return new ValidationError(message, body.fieldErrors ?? {}, body.path);

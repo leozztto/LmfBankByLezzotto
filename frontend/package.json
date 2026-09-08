@@ -7,9 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -46,12 +53,22 @@
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "eslint-config-prettier": "^9.1.0",
     "jsdom": "^25.0.1",
+    "lint-staged": "^15.2.11",
     "msw": "^2.4.11",
     "postcss": "^8",
+    "prettier": "3.4.2",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^2.1.9"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{js,mjs,cjs,json,css,md}": "prettier --write"
   },
   "allowScripts": {
     "esbuild@0.21.5": true,

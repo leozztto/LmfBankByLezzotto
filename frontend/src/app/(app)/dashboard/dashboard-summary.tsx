@@ -21,7 +21,11 @@ export function DashboardSummary() {
         <CardHeader>
           <CardDescription>Contas registradas</CardDescription>
           <CardTitle className="text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-12" /> : (data?.length ?? 0)}
+            {isLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              (data?.length ?? 0)
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm">
@@ -39,7 +43,10 @@ export function DashboardSummary() {
           <Link href="/open-account" className="underline underline-offset-4">
             Abrir uma conta
           </Link>
-          <Link href="/deposit-withdraw" className="underline underline-offset-4">
+          <Link
+            href="/deposit-withdraw"
+            className="underline underline-offset-4"
+          >
             Depósito / Saque
           </Link>
           <Link href="/transfer" className="underline underline-offset-4">

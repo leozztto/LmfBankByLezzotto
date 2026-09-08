@@ -46,8 +46,13 @@ async function proxy(request: NextRequest, path: string[]) {
 
 type Ctx = { params: { path: string[] } };
 
-export const GET = (req: NextRequest, { params }: Ctx) => proxy(req, params.path);
-export const POST = (req: NextRequest, { params }: Ctx) => proxy(req, params.path);
-export const PUT = (req: NextRequest, { params }: Ctx) => proxy(req, params.path);
-export const PATCH = (req: NextRequest, { params }: Ctx) => proxy(req, params.path);
-export const DELETE = (req: NextRequest, { params }: Ctx) => proxy(req, params.path);
+export const GET = (req: NextRequest, { params }: Ctx) =>
+  proxy(req, params.path);
+export const POST = (req: NextRequest, { params }: Ctx) =>
+  proxy(req, params.path);
+export const PUT = (req: NextRequest, { params }: Ctx) =>
+  proxy(req, params.path);
+export const PATCH = (req: NextRequest, { params }: Ctx) =>
+  proxy(req, params.path);
+export const DELETE = (req: NextRequest, { params }: Ctx) =>
+  proxy(req, params.path);

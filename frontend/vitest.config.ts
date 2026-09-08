@@ -19,6 +19,15 @@ export default defineConfig({
       reporter: ["text", "lcov"],
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,tsx}"],
+      // Ratchet set just below the measured numbers (lines ~95.7, branch ~88).
+      // The SonarCloud quality gate still owns new-code coverage; this only
+      // blocks a broad local regression.
+      thresholds: {
+        lines: 94,
+        statements: 94,
+        functions: 92,
+        branches: 85,
+      },
       exclude: [
         "src/**/*.{test,spec}.{ts,tsx}",
         "src/test/**",

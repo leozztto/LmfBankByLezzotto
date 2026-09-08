@@ -10,7 +10,9 @@ const BACKEND = "http://backend:8080";
 const LOCAL = "http://localhost:8080";
 
 // A syntactically valid unsigned JWT with sub=demo, exp far in the future.
-const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+const header = Buffer.from(
+  JSON.stringify({ alg: "HS256", typ: "JWT" }),
+).toString("base64url");
 const payload = Buffer.from(
   JSON.stringify({ sub: "demo", exp: Math.floor(Date.now() / 1000) + 86400 }),
 ).toString("base64url");

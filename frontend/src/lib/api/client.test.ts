@@ -11,7 +11,11 @@ describe("apiFetch", () => {
     server.use(
       http.get("/api/ping", () => HttpResponse.json({ ok: true, n: 1 })),
     );
-    const data = await apiFetch("ping", {}, z.object({ ok: z.boolean(), n: z.number() }));
+    const data = await apiFetch(
+      "ping",
+      {},
+      z.object({ ok: z.boolean(), n: z.number() }),
+    );
     expect(data).toEqual({ ok: true, n: 1 });
   });
 
@@ -56,7 +60,9 @@ describe("apiFetch", () => {
         ),
       ),
     );
-    const err = (await apiFetch("accounts", { method: "POST", body: {} }).catch((e) => e)) as ApiError;
+    const err = (await apiFetch("accounts", { method: "POST", body: {} }).catch(
+      (e) => e,
+    )) as ApiError;
     expect(err).toBeInstanceOf(ValidationError);
     expect(err.fieldErrors).toEqual({
       email: "must be a well-formed email address",
@@ -67,7 +73,11 @@ describe("apiFetch", () => {
     server.use(
       http.post("/api/transactions", () =>
         HttpResponse.json(
-          { status: 422, code: "INSUFFICIENT_BALANCE", message: "Saldo insuficiente" },
+          {
+            status: 422,
+            code: "INSUFFICIENT_BALANCE",
+            message: "Saldo insuficiente",
+          },
           { status: 422 },
         ),
       ),
@@ -80,7 +90,10 @@ describe("apiFetch", () => {
   it("maps a 401 to ApiError(401)", async () => {
     server.use(
       http.get("/api/secure", () =>
-        HttpResponse.json({ status: 401, code: "UNAUTHORIZED", message: "no" }, { status: 401 }),
+        HttpResponse.json(
+          { status: 401, code: "UNAUTHORIZED", message: "no" },
+          { status: 401 },
+        ),
       ),
     );
     const err = (await apiFetch("secure").catch((e) => e)) as ApiError;
@@ -90,8 +103,9 @@ describe("apiFetch", () => {
 
   it("wraps a non-JSON error body as ApiError('UPSTREAM')", async () => {
     server.use(
-      http.get("/api/boom", () =>
-        new HttpResponse("502 Bad Gateway", { status: 502 }),
+      http.get(
+        "/api/boom",
+        () => new HttpResponse("502 Bad Gateway", { status: 502 }),
       ),
     );
     const err = (await apiFetch("boom").catch((e) => e)) as ApiError;

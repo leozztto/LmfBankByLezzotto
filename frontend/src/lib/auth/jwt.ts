@@ -13,9 +13,11 @@ export interface JwtPayload {
 export function decodeJwt(token: string): JwtPayload | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
+  const payload = parts[1];
+  if (!payload) return null;
   try {
     const json = Buffer.from(
-      parts[1].replace(/-/g, "+").replace(/_/g, "/"),
+      payload.replace(/-/g, "+").replace(/_/g, "/"),
       "base64",
     ).toString("utf8");
     return JSON.parse(json) as JwtPayload;
