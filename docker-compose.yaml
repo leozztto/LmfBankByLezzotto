@@ -68,6 +68,13 @@ services:
     container_name: lmf-frontend
     depends_on:
       - backend
+    environment:
+      # O BFF (route handlers do Next) repassa /api/* para cá. ADR 0007.
+      BACKEND_ORIGIN: http://backend:8080
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Cookie de sessão sem Secure enquanto o nginx serve HTTP puro; ligar sob TLS.
+      COOKIE_SECURE: "false"
     expose:
       - "3000"
 
@@ -76,7 +83,6 @@ services:
     container_name: lmf-nginx
     depends_on:
       - frontend
-      - backend
     ports:
       - "80:80"
 

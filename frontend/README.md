@@ -1,6 +1,7 @@
 # frontend
 
-Web app do LmfBank — React + Next.js 14 (App Router) + Tailwind + TypeScript (ADR 0003).
+Web app do LmfBank — React + Next.js 14 (App Router) + Tailwind + TypeScript +
+shadcn/ui + TanStack Query + React Hook Form/Zod + Zustand (ADR 0003).
 
 ```bash
 npm run dev            # dev server (localhost:3000)
@@ -10,18 +11,25 @@ npm run test:coverage  # + lcov em coverage/
 npm run build          # build de produção (output standalone)
 ```
 
-Sobe junto da stack via `docker compose up` na raiz; o nginx faz o proxy de `/` para cá
-e de `/api` para o backend (mesma origem).
+## Autenticação (ADR 0007)
+
+O JWT vive num **cookie httpOnly** que o browser nunca lê. As _route handlers_ do
+Next em `src/app/api/` são um **BFF**: `auth/login` chama o backend e seta o cookie;
+`auth/logout` limpa; `auth/session` reporta a sessão; o catch-all `[...path]` lê o
+cookie e injeta `Authorization: Bearer` ao repassar `/api/*` para `BACKEND_ORIGIN`.
+O `middleware.ts` protege as rotas pela presença do cookie.
 
 ## Desenvolvimento com HMR
 
-Para iterar nas telas sem rebuildar o container:
-
 ```bash
-docker compose up -d postgres kafka zookeeper backend   # backend + infra
-cd frontend && npm run dev                              # front na :3000 com HMR
+# na raiz: só backend + infra
+docker compose up -d postgres kafka zookeeper backend
+
+# aqui: front na :3000 com HMR
+cp .env.example .env.local        # BACKEND_ORIGIN=http://localhost:8080
+npm run dev
 ```
 
-O `next.config.mjs` faz o proxy de `/api/*` para `http://localhost:8080` em dev (ajustável
-por `BACKEND_ORIGIN`), então `fetch("/api/...")` funciona igual ao ambiente com nginx —
-mesma origem, sem CORS.
+`fetch("/api/...")` funciona igual ao ambiente com nginx — mesma origem, sem CORS.
+Em produção o nginx encaminha tudo (inclusive `/api`) para o Next; o backend não é
+exposto publicamente.
