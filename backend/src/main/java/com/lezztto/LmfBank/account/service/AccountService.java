@@ -3,6 +3,7 @@ package com.lezztto.LmfBank.account.service;
 import com.lezztto.LmfBank.account.domain.dto.AccountDto;
 import com.lezztto.LmfBank.account.domain.entity.Account;
 import com.lezztto.LmfBank.account.domain.entity.AccountBalance;
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.domain.response.AccountResponse;
 import com.lezztto.LmfBank.account.exception.AccountNotFoundException;
 import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
@@ -15,11 +16,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AccountService {
+
+    /** Fixed agency for the demo — there is no branch-assignment logic. */
+    private static final String DEFAULT_AGENCY = "0001";
 
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
@@ -36,6 +41,8 @@ public class AccountService {
         log.info("mapping account data to the document : {}", accountDto.getDocumentNumber());
 
         var accountEntity = accountMapper.toAccount(accountDto);
+
+        applyServerDefaults(accountEntity);
 
         setAddressesForAccount(accountEntity);
 
@@ -54,6 +61,24 @@ public class AccountService {
         log.info("Saving account: {}", account.getId());
 
         return accountRepository.save(account);
+    }
+
+    /**
+     * Fields the client (or the Kafka event) is not required to supply. Only defaulted when
+     * missing, so an inbound value still wins. {@code createdAt} is cleared so the entity's
+     * {@code @CreationTimestamp} is authoritative.
+     */
+    private void applyServerDefaults(Account account) {
+
+        if (account.getAccountStatus() == null) {
+            account.setAccountStatus(AccountStatus.ACTIVE);
+        }
+
+        if (account.getAgency() == null || account.getAgency().isBlank()) {
+            account.setAgency(DEFAULT_AGENCY);
+        }
+
+        account.setCreatedAt(null);
     }
 
     private void validateDocumentNumber(String documentNumber) {
@@ -82,6 +107,16 @@ public class AccountService {
                 .build();
 
         account.addBalance(balances);
+    }
+
+    public List<AccountResponse> findAll() {
+
+        log.info("Listing all accounts");
+
+        return accountRepository.findAllWithRelations()
+                .stream()
+                .map(accountMapper::toAccountResponse)
+                .toList();
     }
 
     public AccountResponse findById(Long accountId) {

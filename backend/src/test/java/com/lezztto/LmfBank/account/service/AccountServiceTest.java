@@ -3,6 +3,7 @@ package com.lezztto.LmfBank.account.service;
 import com.lezztto.LmfBank.account.domain.dto.AccountDto;
 import com.lezztto.LmfBank.account.domain.entity.Account;
 import com.lezztto.LmfBank.account.domain.entity.Address;
+import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
 import com.lezztto.LmfBank.account.domain.response.AccountResponse;
 import com.lezztto.LmfBank.account.exception.AccountNotFoundException;
 import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
@@ -168,6 +169,58 @@ class AccountServiceTest {
         when(accountRepository.findByDocumentNumberWithRelations("000")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> accountService.findByDocumentNumber("000"))
                 .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("create: aplica defaults de servidor (accountStatus=ACTIVE, agency=0001, createdAt limpo)")
+    void createAppliesServerDefaults() {
+        AccountDto dto = dto("22222222222");
+        Account mapped = accountWith(new ArrayList<>());
+        mapped.setCreatedAt(java.time.LocalDateTime.now());
+
+        when(accountRepository.existsByDocumentNumber("22222222222")).thenReturn(false);
+        when(accountMapper.toAccount(dto)).thenReturn(mapped);
+        when(accountRepository.save(mapped)).thenReturn(mapped);
+        when(accountMapper.toAccountResponse(mapped)).thenReturn(AccountResponse.builder().build());
+
+        accountService.create(dto);
+
+        assertThat(mapped.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(mapped.getAgency()).isEqualTo("0001");
+        assertThat(mapped.getCreatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("create: valores enviados de accountStatus e agency prevalecem sobre os defaults")
+    void createKeepsProvidedStatusAndAgency() {
+        AccountDto dto = dto("33333333333");
+        Account mapped = accountWith(new ArrayList<>());
+        mapped.setAccountStatus(AccountStatus.BLOCKED);
+        mapped.setAgency("4277");
+
+        when(accountRepository.existsByDocumentNumber("33333333333")).thenReturn(false);
+        when(accountMapper.toAccount(dto)).thenReturn(mapped);
+        when(accountRepository.save(mapped)).thenReturn(mapped);
+        when(accountMapper.toAccountResponse(mapped)).thenReturn(AccountResponse.builder().build());
+
+        accountService.create(dto);
+
+        assertThat(mapped.getAccountStatus()).isEqualTo(AccountStatus.BLOCKED);
+        assertThat(mapped.getAgency()).isEqualTo("4277");
+    }
+
+    @Test
+    @DisplayName("findAll: mapeia cada conta para a resposta")
+    void findAllMapsList() {
+        Account a = Account.builder().id(1L).build();
+        Account b = Account.builder().id(2L).build();
+        when(accountRepository.findAllWithRelations()).thenReturn(List.of(a, b));
+        when(accountMapper.toAccountResponse(a)).thenReturn(AccountResponse.builder().accountId(1L).build());
+        when(accountMapper.toAccountResponse(b)).thenReturn(AccountResponse.builder().accountId(2L).build());
+
+        List<AccountResponse> result = accountService.findAll();
+
+        assertThat(result).extracting(AccountResponse::getAccountId).containsExactly(1L, 2L);
     }
 
     @Test

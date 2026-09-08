@@ -23,8 +23,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Regras de criação de um lançamento individual do ledger (uma "perna" de
- * crédito ou débito), com idempotência por transferId + tipo.
+ * Regras de criação de um lançamento individual do ledger. A chave de idempotência
+ * agora é fornecida pelo chamador (a string do request, para depósito/saque; a chave
+ * derivada da transferência, para as pernas).
  */
 @ExtendWith(MockitoExtension.class)
 class TransactionDomainServiceTest {
@@ -38,76 +39,68 @@ class TransactionDomainServiceTest {
     private TransactionDomainService transactionDomainService;
 
     @Test
-    @DisplayName("sem lançamento anterior: persiste nova transação COMPLETED com os dados informados")
+    @DisplayName("sem lançamento anterior: persiste nova transação COMPLETED com os dados e a chave informados")
     void shouldPersistNewTransaction() {
-        UUID transferId = UUID.randomUUID();
         BigDecimal amount = new BigDecimal("75.00");
         when(transactionRepository.findByIdempotencyKey(any())).thenReturn(Optional.empty());
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Transaction result = transactionDomainService.create(
-                ACCOUNT_ID, TransactionType.CREDIT, amount, "Deposit", transferId);
+                ACCOUNT_ID, TransactionType.CREDIT, amount, "aluguel", "client-key-1", null);
 
         assertThat(result.getAccountId()).isEqualTo(ACCOUNT_ID);
         assertThat(result.getType()).isEqualTo(TransactionType.CREDIT);
         assertThat(result.getAmount()).isEqualByComparingTo(amount);
         assertThat(result.getStatus()).isEqualTo(TransactionStatus.COMPLETED);
-        assertThat(result.getDescription()).isEqualTo("Deposit");
-        assertThat(result.getTransferId()).isEqualTo(transferId);
+        assertThat(result.getDescription()).isEqualTo("aluguel");
+        assertThat(result.getIdempotencyKey()).isEqualTo("client-key-1");
+        assertThat(result.getTransferId()).isNull();
         assertThat(result.getId()).isNotNull();
         assertThat(result.getCreatedAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("chave de idempotência é composta por transferId + nome do tipo")
-    void shouldBuildIdempotencyKeyFromTransferIdAndType() {
-        UUID transferId = UUID.randomUUID();
-        when(transactionRepository.findByIdempotencyKey(any())).thenReturn(Optional.empty());
-        when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        transactionDomainService.create(ACCOUNT_ID, TransactionType.DEBIT, BigDecimal.TEN, "Transfer", transferId);
-
-        ArgumentCaptor<String> key = ArgumentCaptor.forClass(String.class);
-        verify(transactionRepository).findByIdempotencyKey(key.capture());
-        assertThat(key.getValue()).isEqualTo(transferId + "-DEBIT");
-    }
-
-    @Test
     @DisplayName("lançamento já existente para a chave: devolve o existente e não persiste de novo")
     void shouldReturnExistingTransactionAndNotPersist() {
-        UUID transferId = UUID.randomUUID();
         Transaction existing = Transaction.builder()
                 .id(UUID.randomUUID())
                 .accountId(ACCOUNT_ID)
                 .type(TransactionType.CREDIT)
                 .amount(BigDecimal.TEN)
                 .status(TransactionStatus.COMPLETED)
-                .transferId(transferId)
-                .idempotencyKey(transferId + "-CREDIT")
+                .idempotencyKey("client-key-2")
                 .build();
-        when(transactionRepository.findByIdempotencyKey(transferId + "-CREDIT")).thenReturn(Optional.of(existing));
+        when(transactionRepository.findByIdempotencyKey("client-key-2")).thenReturn(Optional.of(existing));
 
         Transaction result = transactionDomainService.create(
-                ACCOUNT_ID, TransactionType.CREDIT, BigDecimal.TEN, "Deposit", transferId);
+                ACCOUNT_ID, TransactionType.CREDIT, BigDecimal.TEN, "Deposit", "client-key-2", null);
 
         assertThat(result).isSameAs(existing);
         verify(transactionRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("mesma transferência gera chaves distintas para a perna de débito e a de crédito")
-    void shouldGenerateDistinctKeysPerLeg() {
+    @DisplayName("perna de transferência é persistida com o transferId e a chave derivada")
+    void shouldPersistTransferLegWithDerivedKey() {
         UUID transferId = UUID.randomUUID();
+        String key = TransactionDomainService.transferLegKey(transferId, TransactionType.DEBIT);
         when(transactionRepository.findByIdempotencyKey(any())).thenReturn(Optional.empty());
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        transactionDomainService.create(ACCOUNT_ID, TransactionType.DEBIT, BigDecimal.TEN, "Transfer out", transferId);
-        transactionDomainService.create(2L, TransactionType.CREDIT, BigDecimal.TEN, "Transfer in", transferId);
+        transactionDomainService.create(
+                ACCOUNT_ID, TransactionType.DEBIT, BigDecimal.TEN, "Transfer to 2", key, transferId);
 
         ArgumentCaptor<Transaction> saved = ArgumentCaptor.forClass(Transaction.class);
-        verify(transactionRepository, org.mockito.Mockito.times(2)).save(saved.capture());
-        assertThat(saved.getAllValues())
-                .extracting(Transaction::getIdempotencyKey)
-                .containsExactly(transferId + "-DEBIT", transferId + "-CREDIT");
+        verify(transactionRepository).save(saved.capture());
+        assertThat(saved.getValue().getTransferId()).isEqualTo(transferId);
+        assertThat(saved.getValue().getIdempotencyKey()).isEqualTo(transferId + "-DEBIT");
+    }
+
+    @Test
+    @DisplayName("transferLegKey compõe transferId + nome do tipo")
+    void transferLegKeyFormat() {
+        UUID transferId = UUID.randomUUID();
+        assertThat(TransactionDomainService.transferLegKey(transferId, TransactionType.CREDIT))
+                .isEqualTo(transferId + "-CREDIT");
     }
 }

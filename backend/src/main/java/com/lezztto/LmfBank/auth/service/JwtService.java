@@ -32,6 +32,11 @@ public class JwtService {
                 .compact();
     }
 
+    /** Token lifetime in seconds (the {@code jwt.expiration} property is milliseconds). */
+    public long getExpiresInSeconds() {
+        return expiration / 1000;
+    }
+
     public String extractUsername(String token) {
 
         return Jwts.parser()

@@ -78,6 +78,7 @@ public class TransferService {
                     TransactionType.DEBIT,
                     transferRequest.getAmount(),
                     "Transfer to " + toAccount.getId(),
+                    TransactionDomainService.transferLegKey(transfer.getId(), TransactionType.DEBIT),
                     transfer.getId()
             );
 
@@ -86,6 +87,7 @@ public class TransferService {
                     TransactionType.CREDIT,
                     transferRequest.getAmount(),
                     "Transfer from " + fromAccount.getId(),
+                    TransactionDomainService.transferLegKey(transfer.getId(), TransactionType.CREDIT),
                     transfer.getId()
             );
 

@@ -12,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,8 +38,9 @@ public class DepositService {
                 account.getId(),
                 TransactionType.CREDIT,
                 transactionRequest.getAmount(),
-                "Deposit",
-                UUID.randomUUID()
+                transactionRequest.getDescription(),
+                transactionRequest.getIdempotencyKey(),
+                null
         );
 
         balanceProjectionService.refresh(account.getId());

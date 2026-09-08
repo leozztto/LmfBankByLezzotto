@@ -1,10 +1,10 @@
 package com.lezztto.LmfBank.auth.controller;
 
 import com.lezztto.LmfBank.auth.domain.LoginRequest;
+import com.lezztto.LmfBank.auth.domain.LoginResponse;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,27 +32,21 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "Token generated successfully",
-                    content = @Content(
-                            schema = @Schema(
-                                    example = "eyJhbGciOiJIUzI1NiJ9..."
-                            )
-                    )
+                    description = "Token generated successfully"
             ),
             @ApiResponse(
                     responseCode = "400",
                     description = "Invalid request",
                     content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Authentication failed",
-                    content = @Content
             )
     })
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
+    public LoginResponse login(@RequestBody LoginRequest request) {
 
-        return jwtService.generateToken(request.username());
+        return new LoginResponse(
+                jwtService.generateToken(request.username()),
+                "Bearer",
+                jwtService.getExpiresInSeconds()
+        );
     }
 }

@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -89,14 +90,14 @@ class WithdrawServiceTest {
 
         when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("100.00"));
-        when(transactionDomainService.create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), eq("Withdraw"), any(UUID.class)))
+        when(transactionDomainService.create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), eq("Withdraw"), anyString(), isNull()))
                 .thenReturn(persisted);
         when(transactionMapper.toResponse(persisted)).thenReturn(expected);
 
         TransactionResponse result = withdrawService.process(debitRequest(amount));
 
         assertThat(result).isSameAs(expected);
-        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), eq("Withdraw"), any(UUID.class));
+        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), eq("Withdraw"), anyString(), isNull());
         verify(balanceProjectionService).refresh(ACCOUNT_ID);
     }
 
@@ -106,12 +107,12 @@ class WithdrawServiceTest {
         BigDecimal amount = new BigDecimal("100.00");
         when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("100.00"));
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedDebit(amount));
 
         withdrawService.process(debitRequest(amount));
 
-        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), anyString(), any());
+        verify(transactionDomainService).create(eq(ACCOUNT_ID), eq(TransactionType.DEBIT), eq(amount), anyString(), anyString(), any());
     }
 
     @Test
@@ -165,12 +166,12 @@ class WithdrawServiceTest {
     void shouldNeverCreateCredit() {
         when(accountService.findByIdAccountForUpdate(ACCOUNT_ID)).thenReturn(activeAccount());
         when(balanceCalculator.calculate(ACCOUNT_ID)).thenReturn(new BigDecimal("1000.00"));
-        when(transactionDomainService.create(any(), any(), any(), anyString(), any()))
+        when(transactionDomainService.create(any(), any(), any(), anyString(), anyString(), any()))
                 .thenReturn(persistedDebit(BigDecimal.TEN));
 
         withdrawService.process(debitRequest(BigDecimal.TEN));
 
         verify(transactionDomainService, never())
-                .create(any(), eq(TransactionType.CREDIT), any(), anyString(), any());
+                .create(any(), eq(TransactionType.CREDIT), any(), anyString(), anyString(), any());
     }
 }
