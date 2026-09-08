@@ -16,6 +16,11 @@ export default function AppError({
         <AlertTitle>Algo deu errado</AlertTitle>
         <AlertDescription>
           {error.message || "Erro inesperado. Tente novamente."}
+          {error.digest && (
+            <span className="mt-1 block text-xs opacity-70">
+              Referência: {error.digest}
+            </span>
+          )}
         </AlertDescription>
       </Alert>
       <Button onClick={reset}>Tentar de novo</Button>

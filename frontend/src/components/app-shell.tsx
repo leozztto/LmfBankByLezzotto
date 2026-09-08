@@ -15,6 +15,13 @@ export function AppShell({
     <div className="flex min-h-screen">
       <SessionBootstrap session={session} />
 
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:shadow"
+      >
+        Pular para o conteúdo
+      </a>
+
       <aside className="hidden w-60 shrink-0 border-r bg-muted/20 md:block">
         <div className="flex h-14 items-center border-b px-5 font-semibold">
           LmfBank
@@ -32,7 +39,9 @@ export function AppShell({
             <LogoutButton />
           </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main id="conteudo" className="flex-1 p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
