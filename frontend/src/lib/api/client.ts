@@ -1,6 +1,10 @@
-import type { ZodType } from "zod";
-
 import { ApiError, apiErrorFromBody, type ApiErrorBody } from "@/lib/api/errors";
+
+/** Anything with a `.parse` — a Zod schema, in practice. Decouples us from
+ *  Zod's input-vs-output generic gymnastics on schemas that transform. */
+interface Parseable<T> {
+  parse: (data: unknown) => T;
+}
 
 /**
  * Browser-side HTTP client. Every call goes to `/api/...` on the same origin —
@@ -32,7 +36,7 @@ async function readBody(res: Response): Promise<unknown> {
 export async function apiFetch<T>(
   path: string,
   options: RequestOptions = {},
-  schema?: ZodType<T>,
+  schema?: Parseable<T>,
 ): Promise<T> {
   const { method = "GET", body, headers = {}, signal } = options;
 

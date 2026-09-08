@@ -15,7 +15,15 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 if (typeof window !== "undefined") {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
   window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+  window.HTMLElement.prototype.setPointerCapture = vi.fn();
   window.HTMLElement.prototype.releasePointerCapture = vi.fn();
+  if (typeof window.PointerEvent === "undefined") {
+    window.PointerEvent = class PointerEvent extends MouseEvent {
+      constructor(type: string, params: PointerEventInit = {}) {
+        super(type, params);
+      }
+    } as unknown as typeof PointerEvent;
+  }
 }
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
