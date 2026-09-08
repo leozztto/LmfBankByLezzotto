@@ -1,9 +1,14 @@
 # Profile used by integration tests. The datasource is supplied at runtime by the
 # Testcontainers PostgreSQL instance (see PostgresContainerSupport), so no url/user here.
 spring:
+  # Flyway runs the same migrations as production against the Testcontainers DB
+  # (ADR 0005); Hibernate only validates the result.
+  flyway:
+    enabled: true
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
