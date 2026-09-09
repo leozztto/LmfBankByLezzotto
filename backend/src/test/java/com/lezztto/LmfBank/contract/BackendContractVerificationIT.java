@@ -171,6 +171,9 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
     private Long persistAccountWithAddress(String documentNumber) {
         Account account = TestData.activeAccount();
         account.setDocumentNumber(documentNumber);
+        // O contrato do front espera accountNumber no formato NNNNNNNN-N (é o que
+        // o AccountService gera). TestData usa só "%08d" — normalizamos aqui.
+        account.setAccountNumber(account.getAccountNumber() + "-1");
         account.addAddress(Address.builder()
                 .zipCode("01001000")
                 .street("Praça da Sé")
