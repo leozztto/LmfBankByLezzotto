@@ -24,7 +24,9 @@ tasks:
       - docker compose down -v
 
   be:test:
-    desc: Testes unitários + integração do backend (precisa de Docker para Testcontainers)
+    desc: >-
+      Testes unitários + integração do backend (precisa de Docker para Testcontainers).
+      Inclui a verificação do provider Pact quando PACT_BROKER_BASE_URL está no ambiente (ADR 0008).
     dir: backend
     cmds:
       - '{{if eq OS "windows"}}cmd /c mvnw.cmd -B verify{{else}}./mvnw -B verify{{end}}'
@@ -36,6 +38,13 @@ tasks:
       - npm ci
       - npm run lint
       - npm run test:coverage
+
+  fe:pact:
+    desc: Gera os pacts do consumer (frontend) exercitando a camada BFF — ADR 0008
+    dir: frontend
+    cmds:
+      - npm ci
+      - npm run pact:test
 
   e2e:
     desc: Sobe a stack em containers e roda a suíte Playwright ponta a ponta

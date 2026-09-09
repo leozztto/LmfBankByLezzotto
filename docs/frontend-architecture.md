@@ -115,6 +115,10 @@ usuário edita o valor, para uma nova tentativa não colidir com a anterior.
 - Cobertura: alvo "Sonar way" (código novo ≥ 80%); rodando ~97%. `layout/loading/error/
   not-found/global-error/page/providers` e `components/ui/**` saem de
   `sonar.coverage.exclusions`; **route handlers do BFF não** — são código de auth e têm teste.
+- **Contract testing (Pact)** em `frontend/pact/` — `npm run pact:test`
+  (`vitest.pact.config.ts`, env `node`), fora do `npm test` e da cobertura. Cada teste dirige
+  a camada BFF real com `BACKEND_ORIGIN` no mock server do Pact e valida `schema.parse` da
+  resposta. Ver [contract-testing.md](contract-testing.md) e [ADR 0008](adr/0008-contract-testing-com-pact.md).
 
 ## Infra
 

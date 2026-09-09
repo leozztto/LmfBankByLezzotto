@@ -1,8 +1,11 @@
 name: e2e
 
-# Fase 4 — valida o contrato real back↔front de ponta a ponta. Roda SEMPRE
-# (fluxo cross-módulo), independente de qual módulo mudou. É um required check
-# à parte do `ci` (ver ADR 0006 / branch protection).
+# Fase 4 — smoke test de ponta a ponta (ADR 0008). Sobe a stack e valida os
+# fluxos críticos pela UI. A rede de segurança do contrato back↔front passou a
+# ser o contract testing com Pact (verificado no backend-ci, antes deste job);
+# aqui só confirmamos que a stack integrada sobe e funciona de verdade. Roda
+# SEMPRE (fluxo cross-módulo) e é um required check à parte do `ci`
+# (ver ADR 0006 / branch protection).
 
 on:
   pull_request:
