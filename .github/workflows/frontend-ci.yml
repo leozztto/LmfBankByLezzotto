@@ -63,7 +63,8 @@ jobs:
         if: >-
           ${{ env.IS_FORK_PR != 'true'
           && (github.event_name == 'pull_request'
-          || github.ref == 'refs/heads/main') }}
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
         run: |
           if [ -z "${{ secrets.PACT_BROKER_TOKEN }}" ]; then
             echo "::error::PACT_BROKER_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
@@ -76,7 +77,8 @@ jobs:
         if: >-
           ${{ env.IS_FORK_PR != 'true'
           && (github.event_name == 'pull_request'
-          || github.ref == 'refs/heads/main') }}
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
         env:
           PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}

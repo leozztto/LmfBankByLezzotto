@@ -64,12 +64,29 @@ quando as variáveis de ambiente estão presentes.
 
 ## O que o CI faz
 
-- **`frontend-ci`**: `pact:test` → publica o pact no broker com a versão (SHA) e a
-  branch do git. PR de *fork* não publica (sem secrets).
-- **`backend-ci`**: `mvn verify` roda a verificação e (em PR do mesmo repo ou push
-  em `main`) publica o resultado; depois o passo **`can-i-deploy`** reprova o job
-  se o backend deste commit não for compatível com o contrato mais recente do
-  front na branch base.
+Tudo acontece **na própria branch de feature / PR** — não precisa mergear em
+`main`/`develop` antes.
+
+- **`frontend-ci`**: `pact:test` → publica o pact no broker com `--consumer-app-version`
+  = SHA e `--branch` = a branch do git (a de feature, num PR). PR de *fork* não
+  publica (sem secrets). Roda em PR e em push para `main`/`develop`.
+- **`backend-ci`**: `mvn verify` roda o `BackendContractVerificationIT`, que usa o
+  seletor `matchingBranch` — **baixa o pact publicado na MESMA branch** que o
+  backend está buildando e verifica contra o app real. Incompatível → o IT falha →
+  o job falha → PR travada. É o gate de verdade.
+- Depois, o passo **`can-i-deploy`** confirma que a verificação foi publicada e
+  está verde: primeiro para o **mesmo commit** (front + back mudando juntos),
+  senão para o último contrato do front na branch base.
+
+### Corrida entre os jobs
+
+`backend` e `frontend` rodam em paralelo (`ci.yml`). No primeiro push de uma PR o
+`mvn verify` do backend pode rodar antes de o `frontend` publicar o pact — aí a
+verificação usa o fallback (`mainBranch` / `deployedOrReleased`) ou
+`@IgnoreNoPactsToVerify`. No push seguinte o pact daquela branch já está no broker.
+O `can-i-deploy` roda mais tarde no job do backend e normalmente já o enxerga.
+Para forçar o ciclo completo num PR novo, publique o pact da branch uma vez à mão
+(ver seção "Rodar localmente").
 
 ## Quando o `can-i-deploy` falha
 
@@ -79,7 +96,12 @@ Leia a tabela que a CLI imprime. Casos comuns:
 |---|---|---|
 | `contract published ... has not been verified` | O front mudou o contrato e o backend ainda não verificou essa versão | Rode `./mvnw verify` no PR do backend (ou espere o `backend-ci`) — se o backend precisa mudar, mude |
 | verificação **falhou** | O backend não atende mais ao que o front espera | Ajuste o backend **ou** alinhe com o front que o contrato vai mudar (e atualize o `.pact.test.ts`) |
-| `no versions ... found` | Bootstrapping: ainda não há contrato do front em `main` | Uma vez: destrave o gate ou mergeie o `frontend-ci` primeiro |
+| `No version of lmfbank-frontend from branch ...` | Bootstrapping: o `frontend-ci` ainda não publicou um pact nessa branch | Nada a fazer — o passo emite `::warning::` e **passa**. Vira bloqueante sozinho assim que o `frontend-ci` publicar uma vez naquela branch |
+
+> O `frontend-ci` publica o pact em PR do mesmo repo e em push para `main`/`develop`.
+> Se o seu fluxo é `feature → develop → main`, o pact aparece na branch `develop`
+> quando a feature entra e na `main` quando `develop` é promovido; o `can-i-deploy`
+> compara sempre contra a branch base do evento (`--branch $BASE_BRANCH`).
 
 ## Adicionar/alterar uma interação
 
