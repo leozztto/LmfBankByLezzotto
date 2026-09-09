@@ -69,7 +69,8 @@ jobs:
         if: >-
           ${{ env.IS_FORK_PR != 'true'
           && (github.event_name == 'pull_request'
-          || github.ref == 'refs/heads/main') }}
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
         run: |
           if [ -z "${{ secrets.PACT_BROKER_TOKEN }}" ]; then
             echo "::error::PACT_BROKER_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
@@ -88,10 +89,10 @@ jobs:
           PACT_PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           publish=false
-          if [ "${IS_FORK_PR}" != "true" ] && \
-             { [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/main" ]; }; then
-            publish=true
-          fi
+          case "${{ github.event_name }}:${{ github.ref }}" in
+            pull_request:*|*:refs/heads/main|*:refs/heads/develop)
+              [ "${IS_FORK_PR}" != "true" ] && publish=true ;;
+          esac
           ./mvnw -B --no-transfer-progress verify \
             -Dpact.verifier.publishResults=$publish \
             -Dpact.provider.version=$GITHUB_SHA \
@@ -99,26 +100,49 @@ jobs:
 
       - name: can-i-deploy (gate de contrato)
         # Reprova o PR se o backend deste commit não for compatível com o contrato
-        # mais recente do frontend na branch base. É o gate que trava o merge —
-        # roda dentro de backend-ci, que alimenta o required check `ci` (ADR 0006).
-        # Só quando o passo anterior publicou o resultado da verificação (PR do
-        # mesmo repo ou push em main); senão não há versão do backend no broker.
+        # do frontend que ele precisa atender. Roda dentro de backend-ci, que
+        # alimenta o required check `ci` (ADR 0006). Estratégia (monorepo):
+        #   1. front e back do MESMO commit (os dois publicam com --version = SHA)
+        #      — é o caso de um PR que mexe nos dois lados na branch de feature;
+        #   2. se o front não mudou neste PR, cai para o último contrato do front
+        #      na branch base;
+        #   3. se nem isso existe (bootstrap), emite ::warning:: e passa.
         if: >-
           ${{ env.IS_FORK_PR != 'true'
           && (github.event_name == 'pull_request'
-          || github.ref == 'refs/heads/main') }}
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
         env:
           PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
-          BASE_BRANCH: ${{ github.base_ref || 'main' }}
+          BASE_BRANCH: ${{ github.base_ref || github.ref_name }}
         run: |
-          docker run --rm \
-            -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN \
-            pactfoundation/pact-cli:latest \
-            pact-broker can-i-deploy \
-              --pacticipant lmfbank-backend --version "$GITHUB_SHA" \
-              --pacticipant lmfbank-frontend --latest --branch "$BASE_BRANCH" \
-              --retry-while-unknown 12 --retry-interval 10
+          set +e
+          cid() {
+            docker run --rm -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN \
+              pactfoundation/pact-cli:latest \
+              pact-broker can-i-deploy \
+                --pacticipant lmfbank-backend --version "$GITHUB_SHA" \
+                --pacticipant lmfbank-frontend "$@" \
+                --retry-while-unknown 12 --retry-interval 10 2>&1
+          }
+          no_front='No version of lmfbank-frontend|no pacts? (for|found)'
+
+          # 1. mesmo commit (front + back mudaram juntos)
+          out=$(cid --version "$GITHUB_SHA"); code=$?
+          if [ $code -ne 0 ] && echo "$out" | grep -qiE "$no_front"; then
+            # 2. PR só de backend → contrato do front que já está na branch base
+            out=$(cid --latest --branch "$BASE_BRANCH"); code=$?
+          fi
+          echo "$out"
+
+          if [ $code -ne 0 ]; then
+            if echo "$out" | grep -qiE "$no_front"; then
+              echo "::warning::Sem contrato do frontend no broker ainda — gate ignorado (bootstrap)."
+              exit 0
+            fi
+            exit $code
+          fi
 
       - name: SonarCloud analysis
         # Coordenadas (org/projectKey) vêm do pom.xml. `qualitygate.wait` reprova
