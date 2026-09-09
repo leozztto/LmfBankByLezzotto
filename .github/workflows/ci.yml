@@ -48,18 +48,22 @@ jobs:
               - '.github/workflows/frontend-ci.yml'
               - '.github/workflows/ci.yml'
 
-  backend:
-    name: backend
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
-    uses: ./.github/workflows/backend-ci.yml
-    secrets: inherit
-
   frontend:
     name: frontend
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' }}
     uses: ./.github/workflows/frontend-ci.yml
+    secrets: inherit
+
+  backend:
+    name: backend
+    # Roda DEPOIS do frontend (ordenação, não acoplamento de resultado): o
+    # frontend precisa ter publicado o pact no broker antes de o backend
+    # verificar e rodar o `can-i-deploy` (ADR 0008). `always()` + a checagem de
+    # `changes` mantêm o backend rodando mesmo se o frontend falhar ou for pulado.
+    needs: [changes, frontend]
+    if: ${{ always() && needs.changes.outputs.backend == 'true' }}
+    uses: ./.github/workflows/backend-ci.yml
     secrets: inherit
 
   ci:

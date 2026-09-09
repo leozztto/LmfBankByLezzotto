@@ -101,11 +101,12 @@ jobs:
       - name: can-i-deploy (gate de contrato)
         # Reprova o PR se o backend deste commit não for compatível com o contrato
         # do frontend que ele precisa atender. Roda dentro de backend-ci, que
-        # alimenta o required check `ci` (ADR 0006). Estratégia (monorepo):
-        #   1. front e back do MESMO commit (os dois publicam com --version = SHA)
-        #      — é o caso de um PR que mexe nos dois lados na branch de feature;
-        #   2. se o front não mudou neste PR, cai para o último contrato do front
-        #      na branch base;
+        # alimenta o required check `ci` (ADR 0006). O backend job roda depois do
+        # frontend (ci.yml), então o pact desta branch já está no broker.
+        # Estratégia:
+        #   1. contrato do front na branch do PR (o frontend-ci publica com
+        #      --branch = branch de origem — ex. feature/monorepo);
+        #   2. senão, o contrato do front que já está na branch base;
         #   3. se nem isso existe (bootstrap), emite ::warning:: e passa.
         if: >-
           ${{ env.IS_FORK_PR != 'true'
@@ -115,6 +116,7 @@ jobs:
         env:
           PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
           BASE_BRANCH: ${{ github.base_ref || github.ref_name }}
         run: |
           set +e
@@ -123,22 +125,21 @@ jobs:
               pactfoundation/pact-cli:latest \
               pact-broker can-i-deploy \
                 --pacticipant lmfbank-backend --version "$GITHUB_SHA" \
-                --pacticipant lmfbank-frontend "$@" \
-                --retry-while-unknown 12 --retry-interval 10 2>&1
+                --pacticipant lmfbank-frontend --latest --branch "$1" \
+                --retry-while-unknown 18 --retry-interval 10 2>&1
           }
-          no_front='No version of lmfbank-frontend|no pacts? (for|found)'
+          # mensagens que significam "o front ainda não tem contrato aqui"
+          no_data='No version of lmfbank-frontend|No pacts or verifications have been published for version .* of lmfbank-frontend|no pacts (found|for)'
 
-          # 1. mesmo commit (front + back mudaram juntos)
-          out=$(cid --version "$GITHUB_SHA"); code=$?
-          if [ $code -ne 0 ] && echo "$out" | grep -qiE "$no_front"; then
-            # 2. PR só de backend → contrato do front que já está na branch base
-            out=$(cid --latest --branch "$BASE_BRANCH"); code=$?
+          out=$(cid "$HEAD_BRANCH"); code=$?
+          if [ $code -ne 0 ] && [ "$HEAD_BRANCH" != "$BASE_BRANCH" ] && echo "$out" | grep -qiE "$no_data"; then
+            out=$(cid "$BASE_BRANCH"); code=$?
           fi
           echo "$out"
 
           if [ $code -ne 0 ]; then
-            if echo "$out" | grep -qiE "$no_front"; then
-              echo "::warning::Sem contrato do frontend no broker ainda — gate ignorado (bootstrap)."
+            if echo "$out" | grep -qiE "$no_data"; then
+              echo "::warning::Sem contrato do frontend no broker para '$HEAD_BRANCH'/'$BASE_BRANCH' ainda — gate ignorado (bootstrap)."
               exit 0
             fi
             exit $code
