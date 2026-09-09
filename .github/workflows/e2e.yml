@@ -1,0 +1,81 @@
+name: e2e
+
+# Fase 4 — valida o contrato real back↔front de ponta a ponta. Roda SEMPRE
+# (fluxo cross-módulo), independente de qual módulo mudou. É um required check
+# à parte do `ci` (ver ADR 0006 / branch protection).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    # o `name` vira o nome do status check exigido no branch protection — manter "e2e"
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE_FILES: -f docker-compose.yaml -f docker-compose.e2e.yaml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configura o .env do compose (defaults do .env.example, sem secret)
+        run: cp .env.example .env
+
+      - name: Sobe a stack e espera ficar saudável
+        run: docker compose $COMPOSE_FILES up -d --build --wait
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Cache dos navegadores do Playwright
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('e2e/package-lock.json') }}
+
+      - name: Instala dependências do e2e
+        working-directory: e2e
+        run: npm ci
+
+      - name: Instala o Chromium do Playwright
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Roda a suíte E2E
+        working-directory: e2e
+        run: npm test
+
+      - name: Logs da stack (em caso de falha)
+        if: failure()
+        run: docker compose $COMPOSE_FILES logs --no-color --timestamps
+
+      - name: Anexa relatório do Playwright (trace, screenshot, vídeo)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Derruba a stack
+        if: always()
+        run: docker compose $COMPOSE_FILES down -v

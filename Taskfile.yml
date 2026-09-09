@@ -38,6 +38,25 @@ tasks:
       - npm run test:coverage
 
   e2e:
-    desc: "(stub) E2E cross-módulo — implementado na Fase 4"
+    desc: Sobe a stack em containers e roda a suíte Playwright ponta a ponta
+    dir: e2e
+    deps: [e2e:up]
     cmds:
-      - echo "e2e não implementado até a Fase 4"
+      - npm ci
+      - npx playwright install --with-deps chromium
+      - defer: { task: e2e:down }
+      - npm test
+
+  e2e:up:
+    desc: Sobe a stack com os healthchecks do override de E2E e espera ficar saudável
+    cmds:
+      - '{{if eq OS "windows"}}powershell -Command "if (!(Test-Path .env)) { Copy-Item .env.example .env }"{{else}}cp -n .env.example .env || true{{end}}'
+      # recria zookeeper/kafka/backend do zero (evita nó efêmero preso no zookeeper
+      # de uma execução anterior); mantém o volume pgdata para acelerar o local
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml down
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml up -d --build --wait
+
+  e2e:down:
+    desc: Derruba a stack de E2E e apaga o volume do banco
+    cmds:
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml down -v
