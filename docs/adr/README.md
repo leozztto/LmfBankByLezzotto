@@ -32,3 +32,4 @@ enxuto:
 | [0005](0005-flyway-para-migracoes-de-schema.md) | Flyway para versionamento e migração do schema | Aceito |
 | [0006](0006-ci-e-sonarcloud-por-modulo.md) | CI e SonarCloud independentes por módulo (orquestrador + workflows reutilizáveis) | Aceito |
 | [0007](0007-token-jwt-cookie-httponly-bff-next.md) | Armazenamento do token JWT: cookie httpOnly + BFF no Next | Aceito |
+| [0008](0008-contract-testing-com-pact.md) | Contract testing com Pact (consumer no frontend, verificação no backend) | Aceito |

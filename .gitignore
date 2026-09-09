@@ -47,6 +47,8 @@ build/
 /frontend/.next/
 /frontend/out/
 /frontend/coverage/
+### pacts gerados pelo consumer (publicados no broker pelo CI — ADR 0008) ###
+/frontend/pact/pacts/
 
 ### e2e (Playwright — Fase 4) ###
 /e2e/node_modules/

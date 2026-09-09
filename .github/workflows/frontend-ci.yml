@@ -52,6 +52,40 @@ jobs:
       - name: Unit tests + coverage
         run: npm run test:coverage     # -> frontend/coverage/lcov.info
 
+      - name: Contract tests (consumer Pact)
+        # Gera frontend/pact/pacts/*.json exercitando a camada BFF real (ADR 0008).
+        run: npm run pact:test
+
+      - name: Check Pact configuration
+        # Mesmo princípio do check do Sonar: se a publicação é esperada mas o
+        # PACT_BROKER_TOKEN sumiu, falhar de propósito — step pulado não pode
+        # parecer verde.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == 'refs/heads/main') }}
+        run: |
+          if [ -z "${{ secrets.PACT_BROKER_TOKEN }}" ]; then
+            echo "::error::PACT_BROKER_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Publish pacts
+        # PR de fork não tem secrets → pula (o pact do fork é verificado como WIP
+        # depois que a branch entra). Publica com a versão = SHA e a branch do git.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == 'refs/heads/main') }}
+        env:
+          PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          PACT_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: >-
+          npm run pact:publish --
+          --consumer-app-version "$GITHUB_SHA"
+          --branch "$PACT_BRANCH"
+
       - name: Build
         run: npm run build             # next build (output standalone)
 

@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
@@ -9,6 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: "./vitest.setup.ts",
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Testes de contrato (Pact) rodam por conta própria — `npm run pact:test`
+    // com vitest.pact.config.ts. Ver ADR 0008.
+    exclude: [...configDefaults.exclude, "pact/**"],
     // Route handlers and middleware are server code — run them in node.
     // Server components (layouts/pages) are tested in jsdom with next/headers
     // and next/navigation mocked.

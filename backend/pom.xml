@@ -20,6 +20,9 @@
 		<jacoco.version>0.8.13</jacoco.version>
 		<sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
 
+		<!-- Contract testing (ADR 0008): verificação do provider via broker PactFlow. -->
+		<pact.version>4.6.21</pact.version>
+
 		<!-- Coordenadas do SonarCloud: fonte única de verdade (não há mais override
 		     por Actions vars). O backend-ci.yml passa apenas SONAR_TOKEN e
 		     -Dsonar.qualitygate.wait=true. Projeto: leozztto_lmfbank-backend. -->
@@ -130,6 +133,14 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Pact provider: baixa os pacts do broker e verifica contra o app real
+		     (ADR 0008). Traz JUnit5 + suporte a Spring. -->
+		<dependency>
+			<groupId>au.com.dius.pact.provider</groupId>
+			<artifactId>junit5spring</artifactId>
+			<version>${pact.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
