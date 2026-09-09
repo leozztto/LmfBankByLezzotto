@@ -75,7 +75,7 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
      * e as marcadas como deployed/released.
      */
     @PactBrokerConsumerVersionSelectors
-    static SelectorBuilder consumerVersionSelectors() {
+    public static SelectorBuilder consumerVersionSelectors() {
         return new SelectorBuilder()
                 .matchingBranch()
                 .mainBranch()
