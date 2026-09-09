@@ -100,7 +100,14 @@ Adotamos a opção **C**.
   `can-i-deploy` pode não ter dados. É esperado destravar o gate uma única vez (ou mergear o
   contrato do front primeiro). *Pending pacts* cobrem o caso de contrato novo dentro de um PR.
 - Monorepo com os dois lados mudando no mesmo PR: o provider verifica o pact da **branch do
-  consumer** (`matchingBranch`), então a incompatibilidade aparece no próprio PR.
+  consumer** (`matchingBranch`), então a incompatibilidade aparece no próprio PR — funciona
+  em qualquer branch de feature, sem precisar mergear em `main`/`develop` antes.
+- **`ci.yml` ganha ordenação:** o job `backend` passa a ter `needs: [changes, frontend]` (com
+  `always()` + a checagem de `changes`, então é só ordem — falha ou skip do frontend não
+  bloqueia o backend). Sem isso, os dois jobs rodam em paralelo e o `mvn verify` do backend
+  pode rodar antes de o frontend publicar o pact. O `can-i-deploy` tolera automaticamente o
+  caso "o front ainda não publicou contrato aqui" (emite `::warning::` e passa) e só reprova
+  numa incompatibilidade real; vira bloqueante de fato assim que o front publica uma vez.
 - `backend/pom.xml` ganha a dependência `au.com.dius.pact.provider:junit5spring` (test scope);
   `frontend/package.json` ganha `@pact-foundation/pact` + `@pact-foundation/pact-cli` (dev) e
   os scripts `pact:test` / `pact:publish`. O `lint` do front passa a cobrir `pact/`.
