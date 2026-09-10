@@ -97,8 +97,11 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
     @TestTemplate
     @ExtendWith(PactVerificationSpringProvider.class)
     void verifyPact(PactVerificationContext context, HttpRequest request) {
-        // Todo endpoint (menos /auth/**) exige um Bearer válido; o filtro só checa
-        // a assinatura, não o "sub", então um token gerado aqui serve para tudo.
+        // O pact traz um "Authorization: Bearer <token de exemplo>" na requisição
+        // (o consumer verifica que o BFF anexa um Bearer). Esse token não é
+        // assinado com a chave do backend — precisamos SUBSTITUIR por um válido,
+        // não só adicionar (senão o filtro lê o primeiro header e devolve 401).
+        request.removeHeaders("Authorization");
         request.addHeader(
                 "Authorization",
                 "Bearer " + jwtService.generateToken("contract-verifier")
