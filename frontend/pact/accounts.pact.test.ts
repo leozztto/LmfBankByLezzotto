@@ -8,15 +8,8 @@ import {
 import { callApi } from "./support/bff";
 import { BEARER_EXAMPLE, newPact } from "./support/pact";
 
-const {
-  eachLike,
-  integer,
-  number,
-  string,
-  regex,
-  nullValue,
-  fromProviderState,
-} = MatchersV3;
+const { like, eachLike, integer, string, regex, nullValue, fromProviderState } =
+  MatchersV3;
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
@@ -27,7 +20,14 @@ vi.mock("next/headers", () => ({
 const JSON_CT = regex("application/json.*", "application/json");
 const AUTH = regex("Bearer .+", BEARER_EXAMPLE);
 
-/** Shape que `accountResponseSchema` (src/lib/schemas/responses.ts) consome. */
+/**
+ * Campos exigidos por `accountResponseSchema` (src/lib/schemas/responses.ts),
+ * com os matchers mais frouxos que o schema Zod aceita:
+ * - `accountNumber` é `z.string()` no front (não checa formato) → `string()`;
+ * - money é `string | number` no front → `like(number)`;
+ * - `updatedAt` é `.nullable()` e `addresses` um array (aceita vazio), mas as
+ *   CHAVES precisam existir na resposta — o schema quebra sem elas.
+ */
 const accountResponseBody = {
   accountId: integer(1),
   fullName: string("Maria Silva"),
@@ -35,28 +35,25 @@ const accountResponseBody = {
   maskedEmail: string("ma*********@example.com"),
   maskedPhone: string("(11) *****-4321"),
   accountType: regex("C|S", "C"),
-  accountNumber: regex("\\d{8}-\\d", "00000001-2"),
+  accountNumber: string("00000001-2"),
   agency: string("0001"),
   accountStatus: regex("A|B|C", "A"),
   createdAt: string("2026-09-09T12:34:56.789"),
   updatedAt: nullValue(),
   balance: {
-    availableBalance: number(0),
-    blockedBalance: number(0),
-    totalBalance: number(0),
+    availableBalance: like(0),
+    blockedBalance: like(0),
+    totalBalance: like(0),
   },
-  addresses: eachLike({
-    id: integer(1),
-    zipCode: string("01001000"),
-    street: string("Praça da Sé"),
-    neighborhood: string("Sé"),
-    number: string("100"),
-    complement: string(""),
-    city: string("São Paulo"),
-    state: string("SP"),
-    country: string("BR"),
-    addressType: regex("R|C|B", "R"),
-  }),
+  addresses: eachLike(
+    {
+      id: integer(1),
+      zipCode: string("01001000"),
+      street: string("Praça da Sé"),
+      addressType: regex("R|C|B", "R"),
+    },
+    0,
+  ),
 };
 
 const createAccountBody = {

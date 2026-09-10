@@ -5,15 +5,8 @@ import { bankStatementResponseSchema } from "@/lib/schemas/responses";
 import { callApi } from "./support/bff";
 import { BEARER_EXAMPLE, newPact } from "./support/pact";
 
-const {
-  eachLike,
-  integer,
-  number,
-  string,
-  regex,
-  nullValue,
-  fromProviderState,
-} = MatchersV3;
+const { like, eachLike, integer, string, regex, nullValue, fromProviderState } =
+  MatchersV3;
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
@@ -42,14 +35,14 @@ describe("Pact · lmfbank-frontend → lmfbank-backend · statement", () => {
         headers: { "Content-Type": JSON_CT },
         body: {
           accountId: integer(1),
-          balance: number(150.0),
+          balance: like(150.0),
           startDate: nullValue(),
           endDate: nullValue(),
           transactions: eachLike({
             transactionId: string("2b1c9f6e-0a1b-4c2d-9e3f-4a5b6c7d8e9f"),
             accountId: integer(1),
             type: regex("CREDIT|DEBIT", "CREDIT"),
-            amount: number(150.0),
+            amount: like(150.0),
             status: regex("PENDING|COMPLETED|FAILED", "COMPLETED"),
             description: string("Opening balance"),
             createdAt: string("2026-09-09T12:34:56.789"),

@@ -8,16 +8,8 @@ import {
 import { callApi } from "./support/bff";
 import { BEARER_EXAMPLE, newPact } from "./support/pact";
 
-const {
-  like,
-  integer,
-  number,
-  string,
-  regex,
-  uuid,
-  nullValue,
-  fromProviderState,
-} = MatchersV3;
+const { like, integer, string, regex, uuid, nullValue, fromProviderState } =
+  MatchersV3;
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
@@ -55,7 +47,7 @@ describe("Pact · lmfbank-frontend → lmfbank-backend · movements", () => {
           transactionId: uuid("2b1c9f6e-0a1b-4c2d-9e3f-4a5b6c7d8e9f"),
           accountId: integer(1),
           type: regex("CREDIT|DEBIT", "CREDIT"),
-          amount: number(150.0),
+          amount: like(150.0),
           status: regex("PENDING|COMPLETED|FAILED", "COMPLETED"),
           description: string("Depósito"),
           createdAt: string("2026-09-09T12:34:56.789"),
@@ -101,7 +93,7 @@ describe("Pact · lmfbank-frontend → lmfbank-backend · movements", () => {
           transferId: uuid("9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d"),
           fromAccountId: integer(1),
           toAccountId: integer(2),
-          amount: number(125.0),
+          amount: like(125.0),
           status: regex("PENDING|COMPLETED|FAILED", "COMPLETED"),
           createdAt: string("2026-09-09T12:34:56.789"),
           failureReason: nullValue(),
