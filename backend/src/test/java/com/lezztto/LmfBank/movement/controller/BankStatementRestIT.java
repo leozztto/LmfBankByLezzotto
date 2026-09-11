@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.movement.controller;
 
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import com.lezztto.LmfBank.movement.domain.entity.Transaction;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionStatus;
@@ -37,7 +38,8 @@ class BankStatementRestIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        bearer = "Bearer " + jwtService.generateToken("statement-tester");
+        // ADMIN: cobre o extrato em si, não a autorização por escopo (ADR 0010).
+        bearer = "Bearer " + jwtService.generateToken("statement-tester", Role.ADMIN, null);
         accountId = persistActiveAccount();
         transactionRepository.saveAndFlush(TestData.openingCredit(accountId, new BigDecimal("200.00")));
         transactionRepository.saveAndFlush(debit(accountId, "50.00"));

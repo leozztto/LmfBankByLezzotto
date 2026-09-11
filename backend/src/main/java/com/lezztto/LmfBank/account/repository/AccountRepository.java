@@ -15,6 +15,13 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     boolean existsByDocumentNumber(String documentNumber);
 
+    /**
+     * Só o id, sem trazer o resto da conta — usado pra checar propriedade (ADR 0010)
+     * ANTES de decidir se vale a pena buscar os dados completos.
+     */
+    @Query("SELECT a.id FROM Account a WHERE a.documentNumber = :documentNumber")
+    Optional<Long> findIdByDocumentNumber(String documentNumber);
+
     @Query("""
     SELECT DISTINCT a
     FROM Account a
@@ -40,6 +47,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     WHERE a.id = :id
     """)
     Optional<Account> findByIdWithRelations(Long id);
+
+    Optional<Account> findByAccountNumber(String accountNumber);
 
     /**
      * Loads the account row with a database-level write lock ({@code SELECT ... FOR UPDATE}).

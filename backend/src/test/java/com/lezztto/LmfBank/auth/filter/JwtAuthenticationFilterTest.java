@@ -1,5 +1,7 @@
 package com.lezztto.LmfBank.auth.filter;
 
+import com.lezztto.LmfBank.auth.domain.AuthenticatedUser;
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -80,10 +82,12 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("token válido: popula o SecurityContext com o username")
+    @DisplayName("token válido: popula o SecurityContext com o AuthenticatedUser e a ROLE_ correspondente")
     void validTokenAuthenticates() throws Exception {
         when(jwtService.isValid("good-token")).thenReturn(true);
         when(jwtService.extractUsername("good-token")).thenReturn("alice");
+        when(jwtService.extractRole("good-token")).thenReturn(Role.USER);
+        when(jwtService.extractAccountId("good-token")).thenReturn(7L);
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/accounts/1");
         request.addHeader("Authorization", "Bearer good-token");
@@ -92,8 +96,10 @@ class JwtAuthenticationFilterTest {
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
         assertThat(auth).isNotNull();
-        assertThat(auth.getPrincipal()).isEqualTo("alice");
-        assertThat(auth.getAuthorities()).isEmpty();
+        assertThat(auth.getPrincipal()).isEqualTo(new AuthenticatedUser("alice", Role.USER, 7L));
+        assertThat(auth.getAuthorities())
+                .extracting(Object::toString)
+                .containsExactly("ROLE_USER");
     }
 
     @Test

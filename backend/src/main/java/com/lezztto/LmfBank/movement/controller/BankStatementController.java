@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.movement.controller;
 
+import com.lezztto.LmfBank.auth.security.AccountAccessGuard;
 import com.lezztto.LmfBank.movement.domain.response.BankStatementResponse;
 import com.lezztto.LmfBank.movement.service.BankStatementService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 public class BankStatementController {
 
     private final BankStatementService bankStatementService;
+    private final AccountAccessGuard accountAccessGuard;
 
     @GetMapping("/statement")
     public BankStatementResponse getStatement(
@@ -20,6 +22,7 @@ public class BankStatementController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate
     ) {
+        accountAccessGuard.assertOwnerOrAdmin(accountId);
         return bankStatementService.getBankStatement(accountId, startDate, endDate);
     }
 }

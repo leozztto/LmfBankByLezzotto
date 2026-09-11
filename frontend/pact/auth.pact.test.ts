@@ -64,4 +64,36 @@ describe("Pact · lmfbank-frontend → lmfbank-backend · auth", () => {
       });
     });
   });
+
+  it("POST /auth/login com senha errada devolve 401 (ApiError)", async () => {
+    pact
+      .given("credentials are rejected")
+      .uponReceiving("a login request with the wrong password")
+      .withRequest({
+        method: "POST",
+        path: "/auth/login",
+        headers: { "Content-Type": JSON_CT },
+        body: { username: "demo", password: "wrong-password" },
+      })
+      .willRespondWith({
+        status: 401,
+        headers: { "Content-Type": JSON_CT },
+        body: {
+          status: integer(401),
+          code: string("INVALID_CREDENTIALS"),
+          message: string("Invalid username or password"),
+        },
+      });
+
+    await pact.executeTest(async (mock) => {
+      const res = await callLogin(mock.url, {
+        username: "demo",
+        password: "wrong-password",
+      });
+
+      // 401 repassado pelo BFF sem gravar cookie — é o que o LoginForm usa pra
+      // mostrar "Usuário ou senha inválidos".
+      expect(res.status).toBe(401);
+    });
+  });
 });

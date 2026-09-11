@@ -19,6 +19,7 @@ export async function GET() {
   return NextResponse.json({
     authenticated: true,
     username: claims?.sub,
+    role: claims?.role,
     expiresAt: typeof claims?.exp === "number" ? claims.exp * 1000 : undefined,
   });
 }

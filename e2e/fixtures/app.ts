@@ -51,10 +51,13 @@ export const test = base.extend<{ app: App }>({
   app: async ({ browser, baseURL }, use) => {
     const context = await browser.newContext({ baseURL });
 
-    // Login sem user store (ADR 0007): qualquer usuário/senha serve. O BFF grava
-    // o cookie `lmf_token` no contexto, que passa a autenticar page + request.
+    // ADMIN (ADR 0010): estes specs criam contas ad-hoc e operam nelas
+    // diretamente (depósito, transferência, extrato) — não são donos delas sob
+    // o modelo de escopo, e o seletor de destino em dropdown (usado abaixo via
+    // `.selectOption`) só existe pra admin. "demo" fica pro login.spec.ts, que
+    // testa a experiência de um usuário comum de verdade.
     const login = await context.request.post("/api/auth/login", {
-      data: { username: "e2e", password: "e2e" },
+      data: { username: "admin", password: "admin" },
     });
     expect(
       login.ok(),

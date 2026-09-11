@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.movement.controller;
 
+import com.lezztto.LmfBank.auth.security.AccountAccessGuard;
 import com.lezztto.LmfBank.movement.domain.response.TransactionResponse;
 import com.lezztto.LmfBank.movement.domain.request.TransactionRequest;
 import com.lezztto.LmfBank.movement.service.TransactionService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final AccountAccessGuard accountAccessGuard;
 
     @Operation(
             summary = "Create a financial transaction",
@@ -50,6 +52,8 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionResponse> create(
             @RequestBody @Valid TransactionRequest transactionRequest) {
+
+        accountAccessGuard.assertOwnerOrAdmin(transactionRequest.getAccountId());
 
         var transactionResponse = transactionService.create(transactionRequest);
 

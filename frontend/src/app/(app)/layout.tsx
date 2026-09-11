@@ -17,6 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const session: Session = {
     authenticated: true,
     username: claims?.sub,
+    role: claims?.role === "ADMIN" ? "ADMIN" : "USER",
     expiresAt: typeof claims?.exp === "number" ? claims.exp * 1000 : undefined,
   };
 

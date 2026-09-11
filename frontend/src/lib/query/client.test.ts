@@ -40,4 +40,14 @@ describe("handleGlobalError", () => {
     handleGlobalError("weird");
     expect(notify.error).toHaveBeenCalledWith("Erro inesperado");
   });
+
+  it("skips everything (even the 401 redirect) when the mutation opts out", () => {
+    useAuthStore.setState({ session: { authenticated: true, username: "u" } });
+    handleGlobalError(new ApiError(401, "INVALID_CREDENTIALS", "no"), {
+      options: { meta: { skipGlobalErrorHandler: true } },
+    });
+    expect(useAuthStore.getState().session).not.toBeNull();
+    expect(window.location.href).toBe("");
+    expect(notify.error).not.toHaveBeenCalled();
+  });
 });

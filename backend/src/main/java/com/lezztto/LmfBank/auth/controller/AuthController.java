@@ -2,6 +2,7 @@ package com.lezztto.LmfBank.auth.controller;
 
 import com.lezztto.LmfBank.auth.domain.LoginRequest;
 import com.lezztto.LmfBank.auth.domain.LoginResponse;
+import com.lezztto.LmfBank.auth.service.AuthService;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private final AuthService authService;
     private final JwtService jwtService;
 
     @Operation(
@@ -38,13 +40,20 @@ public class AuthController {
                     responseCode = "400",
                     description = "Invalid request",
                     content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid username or password",
+                    content = @Content
             )
     })
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
 
+        var user = authService.authenticate(request.username(), request.password());
+
         return new LoginResponse(
-                jwtService.generateToken(request.username()),
+                jwtService.generateToken(user.getUsername(), user.getRole(), user.getAccountId()),
                 "Bearer",
                 jwtService.getExpiresInSeconds()
         );

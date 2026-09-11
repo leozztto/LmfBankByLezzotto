@@ -23,4 +23,20 @@ test.describe("login", () => {
     await page.goto("/accounts");
     await expect(page).toHaveURL(/\/login(\?|$)/);
   });
+
+  test("credenciais inválidas → mensagem de erro, sem sessão (ADR 0009)", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/login");
+    await page.getByLabel("Usuário").fill("1");
+    await page.getByLabel("Senha").fill("1");
+    await page.getByRole("button", { name: "Entrar" }).click();
+
+    await expect(page.getByText("Usuário ou senha inválidos")).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+
+    const cookies = await context.cookies();
+    expect(cookies.map((c) => c.name)).not.toContain("lmf_token");
+  });
 });

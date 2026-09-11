@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.auth.service;
 
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,25 @@ class JwtServiceTest {
 
         assertThat(jwtService.extractUsername(token)).isEqualTo("charlie");
         assertThat(jwtService.isValid(token)).isTrue();
+    }
+
+    @Test
+    @DisplayName("generateToken(username): USER por padrão, sem accountId")
+    void defaultsToUserRoleWithNoAccount() {
+        String token = jwtService.generateToken("charlie");
+
+        assertThat(jwtService.extractRole(token)).isEqualTo(Role.USER);
+        assertThat(jwtService.extractAccountId(token)).isNull();
+    }
+
+    @Test
+    @DisplayName("generateToken(username, role, accountId) faz o round-trip das claims")
+    void roundTripsRoleAndAccountId() {
+        String token = jwtService.generateToken("admin", Role.ADMIN, 42L);
+
+        assertThat(jwtService.extractUsername(token)).isEqualTo("admin");
+        assertThat(jwtService.extractRole(token)).isEqualTo(Role.ADMIN);
+        assertThat(jwtService.extractAccountId(token)).isEqualTo(42L);
     }
 
     @Test

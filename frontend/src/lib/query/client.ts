@@ -1,4 +1,9 @@
-import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import {
+  Mutation,
+  MutationCache,
+  QueryCache,
+  QueryClient,
+} from "@tanstack/react-query";
 
 import { ApiError, ValidationError } from "@/lib/api/errors";
 import { notify } from "@/lib/notify";
@@ -11,8 +16,18 @@ import { useUiStore } from "@/stores/ui-store";
  *    (hard nav re-runs the middleware and drops the cache);
  *  - ValidationError -> the form shows it, stay quiet here;
  *  - anything else -> a toast.
+ *
+ * A mutation tagged `meta: { skipGlobalErrorHandler: true }` (the login mutation
+ * itself — a 401 there means "wrong credentials", not "session lapsed"; the
+ * hard-navigate would wipe the form before it can show that) is left entirely to
+ * its own `onError`/render logic.
  */
-export function handleGlobalError(error: unknown) {
+export function handleGlobalError(
+  error: unknown,
+  mutation?: Pick<Mutation, "options">,
+) {
+  if (mutation?.options.meta?.skipGlobalErrorHandler) return;
+
   if (error instanceof ValidationError) return;
 
   if (error instanceof ApiError && error.status === 401) {
@@ -42,6 +57,9 @@ export function makeQueryClient() {
       },
     },
     queryCache: new QueryCache({ onError: handleGlobalError }),
-    mutationCache: new MutationCache({ onError: handleGlobalError }),
+    mutationCache: new MutationCache({
+      onError: (error, _variables, _context, mutation) =>
+        handleGlobalError(error, mutation),
+    }),
   });
 }

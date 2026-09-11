@@ -1,13 +1,15 @@
 package com.lezztto.LmfBank.auth.filter;
 
+import com.lezztto.LmfBank.auth.domain.AuthenticatedUser;
 import com.lezztto.LmfBank.auth.service.JwtService;
-import java.util.Collections;
+import java.util.List;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -48,13 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (jwtService.isValid(token)) {
 
-            String username = jwtService.extractUsername(token);
+            var user = new AuthenticatedUser(
+                    jwtService.extractUsername(token),
+                    jwtService.extractRole(token),
+                    jwtService.extractAccountId(token)
+            );
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            username,
+                            user,
                             null,
-                            Collections.emptyList()
+                            List.of(new SimpleGrantedAuthority("ROLE_" + user.role().name()))
                     );
 
             SecurityContextHolder.getContext()

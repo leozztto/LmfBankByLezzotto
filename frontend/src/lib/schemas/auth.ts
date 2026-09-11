@@ -18,6 +18,8 @@ export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export const sessionSchema = z.object({
   authenticated: z.boolean(),
   username: z.string().optional(),
+  /** ADR 0010 — absent for a session predating it; treat as a regular user. */
+  role: z.enum(["USER", "ADMIN"]).optional(),
   expiresAt: z.number().optional(),
 });
 export type Session = z.infer<typeof sessionSchema>;

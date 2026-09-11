@@ -68,6 +68,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     authenticated: true,
     username: claims?.sub ?? credentials.username,
+    role: claims?.role,
     expiresAt: Date.now() + maxAge * 1000,
   });
 }

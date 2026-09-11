@@ -35,6 +35,11 @@ export function LoginForm() {
 
   const mutation = useMutation({
     mutationFn: (input: LoginInput) => login(input),
+    // Um 401 aqui é "credenciais erradas", não "sessão expirou" — sem isso, o
+    // handler global (lib/query/client.ts) faria um hard-navigate pra /login
+    // (útil pra sessão que expirou noutra tela) que apagaria este form antes
+    // de ele conseguir mostrar o erro (ADR 0009).
+    meta: { skipGlobalErrorHandler: true },
     onSuccess: async (session) => {
       setSession(session);
       await queryClient.invalidateQueries({ queryKey: queryKeys.session });

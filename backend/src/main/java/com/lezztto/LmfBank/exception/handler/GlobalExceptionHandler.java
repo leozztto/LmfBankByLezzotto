@@ -2,6 +2,10 @@ package com.lezztto.LmfBank.exception.handler;
 
 import com.lezztto.LmfBank.account.exception.AccountNotFoundException;
 import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
+import com.lezztto.LmfBank.auth.exception.AccountAlreadyLinkedException;
+import com.lezztto.LmfBank.auth.exception.AppUserNotFoundException;
+import com.lezztto.LmfBank.auth.exception.ForbiddenActionException;
+import com.lezztto.LmfBank.auth.exception.InvalidCredentialsException;
 import com.lezztto.LmfBank.exception.domain.ApiError;
 import com.lezztto.LmfBank.movement.exception.AccountStatusException;
 import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
@@ -37,6 +41,38 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.CONFLICT, "DOCUMENT_ALREADY_EXISTS", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleInvalidCredentials(
+            InvalidCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AppUserNotFoundException.class)
+    public ResponseEntity<ApiError> handleAppUserNotFound(
+            AppUserNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccountAlreadyLinkedException.class)
+    public ResponseEntity<ApiError> handleAccountAlreadyLinked(
+            AccountAlreadyLinkedException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "ACCOUNT_ALREADY_LINKED", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ForbiddenActionException.class)
+    public ResponseEntity<ApiError> handleForbiddenAction(
+            ForbiddenActionException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccountStatusException.class)

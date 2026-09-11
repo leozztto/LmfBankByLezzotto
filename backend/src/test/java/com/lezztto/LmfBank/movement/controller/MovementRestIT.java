@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.movement.controller;
 
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import com.lezztto.LmfBank.movement.domain.enums.TransactionType;
 import com.lezztto.LmfBank.support.AbstractIntegrationTest;
@@ -34,7 +35,9 @@ class MovementRestIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void authenticate() {
-        bearer = "Bearer " + jwtService.generateToken("integration-tester");
+        // ADMIN: cobre a regra de negócio de depósito/saque/transferência, não a
+        // autorização por escopo (ADR 0010, ver AccountAuthorizationIT).
+        bearer = "Bearer " + jwtService.generateToken("integration-tester", Role.ADMIN, null);
     }
 
     private String creditBody(Long accountId, String amount) {

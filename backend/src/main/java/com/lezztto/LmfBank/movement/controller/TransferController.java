@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.movement.controller;
 
+import com.lezztto.LmfBank.auth.security.AccountAccessGuard;
 import com.lezztto.LmfBank.movement.domain.response.TransferResponse;
 import com.lezztto.LmfBank.movement.domain.request.TransferRequest;
 import com.lezztto.LmfBank.movement.service.TransferService;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransferController {
 
     private final TransferService transferService;
+    private final AccountAccessGuard accountAccessGuard;
 
     @Operation(
             summary = "Create transfer",
@@ -47,6 +49,10 @@ public class TransferController {
     })
     @PostMapping
     public ResponseEntity<TransferResponse> create(@RequestBody @Valid TransferRequest transferRequest) {
+
+        // Só a origem é dona do dinheiro que sai; o destino pode ser qualquer conta —
+        // é o próprio propósito de uma transferência (ADR 0010).
+        accountAccessGuard.assertOwnerOrAdmin(transferRequest.getFromAccountId());
 
         var transferResponse = transferService.createTransfer(transferRequest);
 
