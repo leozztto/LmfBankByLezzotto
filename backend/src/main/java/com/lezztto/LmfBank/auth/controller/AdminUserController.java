@@ -1,5 +1,7 @@
 package com.lezztto.LmfBank.auth.controller;
 
+import com.lezztto.LmfBank.auth.domain.AppUserResponse;
+import com.lezztto.LmfBank.auth.domain.CreateUserRequest;
 import com.lezztto.LmfBank.auth.domain.LinkAccountRequest;
 import com.lezztto.LmfBank.auth.service.AppUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -29,6 +32,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminUserController {
 
     private final AppUserService appUserService;
+
+    @Operation(
+            summary = "Create a login",
+            description = "Creates a new username/password login, always with role USER (creating " +
+                    "another admin isn't exposed here) and no account linked — use PATCH " +
+                    "/admin/users/{username}/account afterward to give it access to one."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "User created successfully"),
+            @ApiResponse(responseCode = "409", description = "Username already exists", content = @Content)
+    })
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public AppUserResponse createUser(@RequestBody @Valid CreateUserRequest request) {
+        return appUserService.createUser(request.username(), request.password());
+    }
 
     @Operation(
             summary = "Link a login to its account",
