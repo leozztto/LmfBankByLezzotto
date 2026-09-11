@@ -16,8 +16,8 @@ async function typeMasked(
 /** Login pela UI: preenche o form e espera cair no dashboard. */
 export async function loginViaUi(
   page: Page,
-  username = "e2e",
-  password = "e2e",
+  username = "demo",
+  password = "demo",
 ): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Usuário").fill(username);

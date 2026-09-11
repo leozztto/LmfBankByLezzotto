@@ -41,6 +41,9 @@ docker compose up --build     # ou: task up
 # http://localhost/api/... -> backend  (via nginx, prefixo /api removido)
 ```
 
+Login: **`demo` / `demo`** — usuário semeado pela migration `V2__app_user.sql` (ADR 0009).
+Não há tela de cadastro de usuário de login (é distinto de abrir uma conta bancária).
+
 O schema do banco é criado e versionado pelo **Flyway** (ADR 0005); o Postgres sobe no
 próprio compose (ADR 0004) — não é mais preciso ter um Postgres no host.
 

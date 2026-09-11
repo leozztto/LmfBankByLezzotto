@@ -111,7 +111,13 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
 
     @State("credentials are accepted")
     void credentialsAreAccepted() {
-        // /auth/login aceita qualquer usuário — nada a preparar.
+        // Usuário "demo" já vem semeado por V2__app_user.sql (ADR 0009) — nada a preparar.
+    }
+
+    @State("credentials are rejected")
+    void credentialsAreRejected() {
+        // "demo" existe (mesma seed), mas o pact manda a senha errada de propósito —
+        // nada a preparar aqui também.
     }
 
     @State("a new account can be created")

@@ -2,6 +2,7 @@ package com.lezztto.LmfBank.exception.handler;
 
 import com.lezztto.LmfBank.account.exception.AccountNotFoundException;
 import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
+import com.lezztto.LmfBank.auth.exception.InvalidCredentialsException;
 import com.lezztto.LmfBank.exception.domain.ApiError;
 import com.lezztto.LmfBank.movement.exception.AccountStatusException;
 import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
@@ -37,6 +38,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.CONFLICT, "DOCUMENT_ALREADY_EXISTS", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleInvalidCredentials(
+            InvalidCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccountStatusException.class)
