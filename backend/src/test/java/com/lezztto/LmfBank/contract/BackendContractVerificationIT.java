@@ -109,8 +109,6 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
         context.verifyInteraction();
     }
 
-    // ---- provider states (os nomes batem com os given(...) do consumer) ----
-
     @State("credentials are accepted")
     void credentialsAreAccepted() {
         // /auth/login aceita qualquer usuário — nada a preparar.
