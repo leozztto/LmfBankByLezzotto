@@ -4,6 +4,7 @@ import com.lezztto.LmfBank.account.domain.dto.AccountDto;
 import com.lezztto.LmfBank.account.domain.entity.Account;
 import com.lezztto.LmfBank.account.domain.entity.AccountBalance;
 import com.lezztto.LmfBank.account.domain.enums.AccountStatus;
+import com.lezztto.LmfBank.account.domain.response.AccountLookupResponse;
 import com.lezztto.LmfBank.account.domain.response.AccountResponse;
 import com.lezztto.LmfBank.account.exception.AccountNotFoundException;
 import com.lezztto.LmfBank.account.exception.DocumentNumberDuplicateException;
@@ -154,5 +155,23 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(documentNumber));
 
         return accountMapper.toAccountResponse(account);
+    }
+
+    /**
+     * Resolve só o id (ADR 0010) — permite checar propriedade antes do fetch completo em
+     * {@link #findByDocumentNumber}, sem transformar "existe conta com esse documento?"
+     * num canal de enumeração pra quem não é dono nem admin.
+     */
+    public Long findIdByDocumentNumber(String documentNumber) {
+        return accountRepository.findIdByDocumentNumber(documentNumber).orElse(null);
+    }
+
+    /** Cross-account lookup for a transfer destination (ADR 0010) — no ownership check applies. */
+    public AccountLookupResponse findByAccountNumber(String accountNumber) {
+
+        var account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> AccountNotFoundException.forAccountNumber(accountNumber));
+
+        return new AccountLookupResponse(account.getId(), account.getAccountNumber(), account.getFullName());
     }
 }

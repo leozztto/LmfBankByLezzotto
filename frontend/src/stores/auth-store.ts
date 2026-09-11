@@ -23,3 +23,5 @@ export const useAuthStore = create<AuthState>((set) => ({
 export const selectIsAuthenticated = (s: AuthState) =>
   s.session?.authenticated === true;
 export const selectUsername = (s: AuthState) => s.session?.username;
+/** ADR 0010 — a session with no `role` claim (minted before the ADR) is treated as a regular user. */
+export const selectIsAdmin = (s: AuthState) => s.session?.role === "ADMIN";

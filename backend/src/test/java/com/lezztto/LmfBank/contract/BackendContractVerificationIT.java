@@ -14,6 +14,7 @@ import com.lezztto.LmfBank.account.domain.entity.Account;
 import com.lezztto.LmfBank.account.domain.entity.Address;
 import com.lezztto.LmfBank.account.domain.enums.AddressType;
 import com.lezztto.LmfBank.account.repository.AccountRepository;
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import com.lezztto.LmfBank.movement.repository.TransactionRepository;
 import com.lezztto.LmfBank.movement.repository.TransferRepository;
@@ -101,10 +102,13 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
         // (o consumer verifica que o BFF anexa um Bearer). Esse token não é
         // assinado com a chave do backend — precisamos SUBSTITUIR por um válido,
         // não só adicionar (senão o filtro lê o primeiro header e devolve 401).
+        // ADMIN: o pact verifica forma de request/response, não autorização por
+        // escopo (ADR 0010) — sem isso, todo estado que opera numa conta "de
+        // outro dono" (que é como a suíte gera todos os ids) levaria 403.
         request.removeHeaders("Authorization");
         request.addHeader(
                 "Authorization",
-                "Bearer " + jwtService.generateToken("contract-verifier")
+                "Bearer " + jwtService.generateToken("contract-verifier", Role.ADMIN, null)
         );
         context.verifyInteraction();
     }
@@ -146,6 +150,18 @@ class BackendContractVerificationIT extends PostgresContainerSupport {
         String document = "12345678901";
         persistAccountWithAddress(document);
         return Map.of("document", document);
+    }
+
+    @State("an account exists with a known number")
+    Map<String, Object> anAccountExistsWithKnownNumber() {
+        Long id = persistAccountWithAddress("33333333333");
+        String accountNumber = accountRepository.findById(id).orElseThrow().getAccountNumber();
+        return Map.of("accountNumber", accountNumber);
+    }
+
+    @State("no account exists with a given number")
+    void noAccountExistsWithGivenNumber() {
+        // banco vazio → GET /accounts/number/{accountNumber} responde 404.
     }
 
     @State("an active account exists")

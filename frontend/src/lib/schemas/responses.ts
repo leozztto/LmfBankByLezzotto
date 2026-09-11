@@ -64,6 +64,21 @@ export type AddressResponse = z.infer<typeof addressResponseSchema>;
 
 export const accountListSchema = z.array(accountResponseSchema);
 
+/**
+ * Cross-account lookup for a transfer destination (ADR 0010, GET /accounts/number/{n}) —
+ * deliberately minimal: no balance/document/status, since a regular user can resolve
+ * anyone's account this way.
+ */
+export const accountLookupResponseSchema = z
+  .object({
+    accountId: z.number(),
+    accountNumber: z.string(),
+    fullName: z.string(),
+  })
+  .passthrough();
+
+export type AccountLookupResponse = z.infer<typeof accountLookupResponseSchema>;
+
 export const transactionResponseSchema = z
   .object({
     transactionId: z.string(),

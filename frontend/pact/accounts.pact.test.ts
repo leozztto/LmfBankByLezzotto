@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   accountListSchema,
+  accountLookupResponseSchema,
   accountResponseSchema,
 } from "@/lib/schemas/responses";
 import { callApi } from "./support/bff";
@@ -212,6 +213,63 @@ describe("Pact · lmfbank-frontend → lmfbank-backend · accounts", () => {
       const body = await res.json();
       expect(res.status).toBe(200);
       expect(() => accountResponseSchema.parse(body)).not.toThrow();
+    });
+  });
+
+  it("GET /accounts/number/{accountNumber} devolve o lookup mínimo (destino de transferência, ADR 0010)", async () => {
+    pact
+      .given("an account exists with a known number")
+      .uponReceiving("a request for an account by number")
+      .withRequest({
+        method: "GET",
+        path: fromProviderState(
+          "/accounts/number/${accountNumber}",
+          "/accounts/number/00000001-1",
+        ),
+        headers: { Authorization: AUTH },
+      })
+      .willRespondWith({
+        status: 200,
+        headers: { "Content-Type": JSON_CT },
+        body: {
+          accountId: integer(1),
+          accountNumber: string("00000001-1"),
+          fullName: string("Maria Silva"),
+        },
+      });
+
+    await pact.executeTest(async (mock) => {
+      const res = await callApi(mock.url, "GET", "accounts/number/00000001-1");
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(() => accountLookupResponseSchema.parse(body)).not.toThrow();
+    });
+  });
+
+  it("GET /accounts/number/{accountNumber} devolve 404 quando não existe", async () => {
+    pact
+      .given("no account exists with a given number")
+      .uponReceiving("a request for an account by a missing number")
+      .withRequest({
+        method: "GET",
+        path: "/accounts/number/00000000-0",
+        headers: { Authorization: AUTH },
+      })
+      .willRespondWith({
+        status: 404,
+        headers: { "Content-Type": JSON_CT },
+        body: {
+          status: integer(404),
+          code: string("ACCOUNT_NOT_FOUND"),
+          message: string("Account not found"),
+        },
+      });
+
+    await pact.executeTest(async (mock) => {
+      const res = await callApi(mock.url, "GET", "accounts/number/00000000-0");
+      const body = await res.json();
+      expect(res.status).toBe(404);
+      expect(body).toMatchObject({ code: "ACCOUNT_NOT_FOUND" });
     });
   });
 });

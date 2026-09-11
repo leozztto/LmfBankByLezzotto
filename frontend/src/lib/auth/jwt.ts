@@ -8,6 +8,9 @@ export interface JwtPayload {
   sub?: string;
   exp?: number;
   iat?: number;
+  /** ADR 0010 — "ADMIN" or "USER"; absent on a token minted before that ADR. */
+  role?: string;
+  accountId?: number;
 }
 
 export function decodeJwt(token: string): JwtPayload | null {

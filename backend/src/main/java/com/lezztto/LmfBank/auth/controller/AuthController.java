@@ -50,10 +50,10 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
 
-        authService.authenticate(request.username(), request.password());
+        var user = authService.authenticate(request.username(), request.password());
 
         return new LoginResponse(
-                jwtService.generateToken(request.username()),
+                jwtService.generateToken(user.getUsername(), user.getRole(), user.getAccountId()),
                 "Bearer",
                 jwtService.getExpiresInSeconds()
         );

@@ -34,3 +34,4 @@ enxuto:
 | [0007](0007-token-jwt-cookie-httponly-bff-next.md) | Armazenamento do token JWT: cookie httpOnly + BFF no Next | Aceito |
 | [0008](0008-contract-testing-com-pact.md) | Contract testing com Pact (consumer no frontend, verificação no backend) | Aceito |
 | [0009](0009-validacao-real-de-credenciais-no-login.md) | Validação real de credenciais em `POST /auth/login` | Aceito |
+| [0010](0010-autorizacao-por-escopo-de-conta.md) | Autorização por escopo de conta: admin vê tudo, usuário comum só a própria | Aceito |

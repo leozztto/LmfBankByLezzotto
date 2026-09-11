@@ -41,8 +41,25 @@ docker compose up --build     # ou: task up
 # http://localhost/api/... -> backend  (via nginx, prefixo /api removido)
 ```
 
-Login: **`demo` / `demo`** — usuário semeado pela migration `V2__app_user.sql` (ADR 0009).
+Login: **`demo` / `demo`** (usuário comum) ou **`admin` / `admin`** (vê qualquer conta —
+ADR 0010), ambos semeados por migration (`V2`/`V3__app_user_roles_and_account_link.sql`).
 Não há tela de cadastro de usuário de login (é distinto de abrir uma conta bancária).
+
+`demo` começa **sem conta vinculada** — só um admin pode vincular uma (ADR 0010), nunca
+automático na abertura de conta. Pra ver algo como `demo`: abra uma conta em
+`/open-account` (anote o `id` na URL do resultado, `/accounts/{id}`), depois vincule via
+Swagger (`http://localhost:8080/swagger-ui.html` → `POST /auth/login` como `admin` →
+`Authorize` com o token → `PATCH /admin/users/demo/account`) ou por linha de comando:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" -d '{"username":"admin","password":"admin"}' \
+  | node -pe "JSON.parse(require('fs').readFileSync(0)).token")
+
+curl -X PATCH http://localhost:8080/admin/users/demo/account \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"accountId": <id da conta aberta>}'
+```
 
 O schema do banco é criado e versionado pelo **Flyway** (ADR 0005); o Postgres sobe no
 próprio compose (ADR 0004) — não é mais preciso ter um Postgres no host.

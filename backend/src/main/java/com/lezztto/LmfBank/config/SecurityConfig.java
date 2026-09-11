@@ -58,6 +58,9 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/actuator/**"
                         ).permitAll()
+                        // Estático — só decide por padrão de URL. A checagem por conta
+                        // (ADR 0010) é dinâmica e vive no AccountAccessGuard.
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

@@ -1,8 +1,11 @@
 package com.lezztto.LmfBank.account.controller;
 
 import com.lezztto.LmfBank.account.domain.dto.AccountDto;
+import com.lezztto.LmfBank.account.domain.response.AccountLookupResponse;
 import com.lezztto.LmfBank.account.domain.response.AccountResponse;
 import com.lezztto.LmfBank.account.service.AccountService;
+import com.lezztto.LmfBank.auth.security.AccountAccessGuard;
+import com.lezztto.LmfBank.auth.security.CurrentUserProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +28,8 @@ import java.util.List;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountAccessGuard accountAccessGuard;
+    private final CurrentUserProvider currentUserProvider;
 
     @Operation(
             summary = "Create account",
@@ -55,12 +60,19 @@ public class AccountController {
 
     @Operation(
             summary = "List accounts",
-            description = "Returns every registered account (no pagination — demo scope)"
+            description = "Admin: every registered account (no pagination — demo scope). " +
+                    "Regular user: only their own linked account, if any (ADR 0010)."
     )
     @ApiResponse(responseCode = "200", description = "Accounts listed successfully")
     @GetMapping
     public List<AccountResponse> list() {
-        return accountService.findAll();
+        var user = currentUserProvider.get();
+        if (user.isAdmin()) {
+            return accountService.findAll();
+        }
+        return user.accountId() == null
+                ? List.of()
+                : List.of(accountService.findById(user.accountId()));
     }
 
     @Operation(
@@ -80,6 +92,10 @@ public class AccountController {
     })
     @GetMapping("/{id}")
     public AccountResponse findById(@PathVariable Long id) {
+        // Checa ANTES de buscar: um id que não é seu leva 403 tanto quando existe
+        // quanto quando não existe, então o status code não vira canal de
+        // enumeração ("existe ou não existe essa conta?") pra quem não é dono.
+        accountAccessGuard.assertOwnerOrAdmin(id);
         return accountService.findById(id);
     }
 
@@ -102,6 +118,27 @@ public class AccountController {
     public AccountResponse findByDocumentNumber(
             @PathVariable String documentNumber) {
 
+        // Resolve só o id (consulta leve) e checa ANTES do fetch completo — pelo
+        // mesmo motivo de findById: sem isso, um documento que existe mas não é
+        // seu (403) fica distinguível de um que não existe (404), o que deixa
+        // varrer CPFs cadastrados de fora da autorização.
+        accountAccessGuard.assertOwnerOrAdmin(accountService.findIdByDocumentNumber(documentNumber));
         return accountService.findByDocumentNumber(documentNumber);
+    }
+
+    @Operation(
+            summary = "Look up an account by number",
+            description = "Minimal, cross-account projection (id, number, name) used to resolve a " +
+                    "transfer destination — available to any authenticated user, not scoped to " +
+                    "their own account (ADR 0010): sending money to someone else's account is the " +
+                    "point of a transfer, not a scope violation."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Account found successfully"),
+            @ApiResponse(responseCode = "404", description = "Account not found", content = @Content)
+    })
+    @GetMapping("/number/{accountNumber}")
+    public AccountLookupResponse findByAccountNumber(@PathVariable String accountNumber) {
+        return accountService.findByAccountNumber(accountNumber);
     }
 }

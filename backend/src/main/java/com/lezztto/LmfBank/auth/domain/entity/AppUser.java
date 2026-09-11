@@ -1,7 +1,10 @@
 package com.lezztto.LmfBank.auth.domain.entity;
 
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,6 +36,17 @@ public class AppUser {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
+    /**
+     * The one account this user may act on (ADR 0010 — 1 user : 1 account). {@code null}
+     * until an admin links one; linking never happens automatically at account-opening time.
+     */
+    @Column(name = "account_id")
+    private Long accountId;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

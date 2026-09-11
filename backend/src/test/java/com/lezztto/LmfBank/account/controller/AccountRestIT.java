@@ -1,5 +1,6 @@
 package com.lezztto.LmfBank.account.controller;
 
+import com.lezztto.LmfBank.auth.domain.enums.Role;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import com.lezztto.LmfBank.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,10 @@ class AccountRestIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void authenticate() {
-        bearer = "Bearer " + jwtService.generateToken("accounts-tester");
+        // ADMIN: este IT cobre a API de contas em si (mascaramento, duplicidade,
+        // busca por id/documento) — não a autorização por escopo (ADR 0010, ver
+        // AccountAuthorizationIT), então o token não é dono da conta que ele mesmo cria.
+        bearer = "Bearer " + jwtService.generateToken("accounts-tester", Role.ADMIN, null);
     }
 
     private static long accountId(String json) {

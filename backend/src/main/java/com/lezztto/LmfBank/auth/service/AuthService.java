@@ -15,15 +15,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     /**
+     * @return o {@link AppUser} autenticado (role + accountId, pro caller montar o JWT).
      * @throws InvalidCredentialsException se o usuário não existir ou a senha não bater —
      *         mesma mensagem/status nos dois casos, pra não revelar quais usuários existem.
      */
-    public void authenticate(String username, String password) {
+    public AppUser authenticate(String username, String password) {
         AppUser user = appUserRepository.findByUsername(username)
                 .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        return user;
     }
 }

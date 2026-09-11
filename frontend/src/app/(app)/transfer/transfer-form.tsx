@@ -12,8 +12,10 @@ import {
 } from "@/lib/schemas/movement";
 import { useTransfer } from "@/hooks/use-transfer";
 import { useUiStore } from "@/stores/ui-store";
+import { useAuthStore, selectIsAdmin } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { AccountSelect } from "@/components/account-select";
+import { AccountNumberInput } from "@/components/account-number-input";
 import { MaskedInput } from "@/components/masked-input";
 import { ApiErrorAlert } from "@/components/api-error-alert";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -28,6 +30,7 @@ import {
 
 export function TransferForm() {
   const selectedAccountId = useUiStore((s) => s.selectedAccountId);
+  const isAdmin = useAuthStore(selectIsAdmin);
   const transfer = useTransfer();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -82,13 +85,21 @@ export function TransferForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Conta de destino</FormLabel>
-                <AccountSelect
-                  aria-label="Conta de destino"
-                  value={field.value || null}
-                  onChange={field.onChange}
-                  exclude={from || null}
-                  placeholder="Selecione o destino"
-                />
+                {isAdmin ? (
+                  <AccountSelect
+                    aria-label="Conta de destino"
+                    value={field.value || null}
+                    onChange={field.onChange}
+                    exclude={from || null}
+                    placeholder="Selecione o destino"
+                  />
+                ) : (
+                  <AccountNumberInput
+                    aria-label="Conta de destino"
+                    value={field.value || null}
+                    onChange={field.onChange}
+                  />
+                )}
                 <FormMessage />
               </FormItem>
             )}

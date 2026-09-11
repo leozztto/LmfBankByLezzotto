@@ -20,4 +20,12 @@ public class AccountNotFoundException extends RuntimeException {
         ));
         this.documentNumber = documentNumber;
     }
+
+    private AccountNotFoundException(String field, String value, boolean ignored) {
+        super(String.format("The Account not found for %s: %s", field, value));
+    }
+
+    public static AccountNotFoundException forAccountNumber(String accountNumber) {
+        return new AccountNotFoundException("accountNumber", accountNumber, true);
+    }
 }
