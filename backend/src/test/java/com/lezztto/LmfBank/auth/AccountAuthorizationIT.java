@@ -1,8 +1,10 @@
 package com.lezztto.LmfBank.auth;
 
 import com.lezztto.LmfBank.auth.domain.enums.Role;
+import com.lezztto.LmfBank.auth.repository.AppUserRepository;
 import com.lezztto.LmfBank.auth.service.JwtService;
 import com.lezztto.LmfBank.support.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,10 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class AccountAuthorizationIT extends AbstractIntegrationTest {
 
+    /** Prefixo dos usernames que os testes de POST /admin/users realmente persistem —
+     *  limpo em {@link #cleanUpCreatedUsers()} pra não acumular no Postgres singleton
+     *  (ADR 0009/0010 seedam 'demo'/'admin' via migration; não mexemos nesses). */
+    private static final String CREATED_USER_PREFIX = "authit-";
+
     @Autowired
     private MockMvc mockMvc;
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private AppUserRepository appUserRepository;
 
     private Long ownAccountId;
     private Long otherAccountId;
@@ -47,6 +56,11 @@ class AccountAuthorizationIT extends AbstractIntegrationTest {
         adminBearer = "Bearer " + jwtService.generateToken("admin-test", Role.ADMIN, null);
         ownerBearer = "Bearer " + jwtService.generateToken("owner-test", Role.USER, ownAccountId);
         strangerBearer = "Bearer " + jwtService.generateToken("stranger-test", Role.USER, null);
+    }
+
+    @AfterEach
+    void cleanUpCreatedUsers() {
+        appUserRepository.deleteByUsernameStartingWith(CREATED_USER_PREFIX);
     }
 
     @Test
@@ -199,6 +213,61 @@ class AccountAuthorizationIT extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accountId\": 1}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /admin/users: admin cria login com role USER e sem conta vinculada")
+    void adminCreatesUser() throws Exception {
+        String username = CREATED_USER_PREFIX + UUID.randomUUID();
+
+        mockMvc.perform(post("/admin/users")
+                        .header("Authorization", adminBearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\": \"%s\", \"password\": \"secret\"}".formatted(username)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.accountId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /admin/users: username duplicado -> 409, e não-admin -> 403")
+    void createUserRejectsDuplicateAndNonAdmin() throws Exception {
+        String username = CREATED_USER_PREFIX + UUID.randomUUID();
+        String body = "{\"username\": \"%s\", \"password\": \"secret\"}".formatted(username);
+
+        mockMvc.perform(post("/admin/users")
+                        .header("Authorization", adminBearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/admin/users")
+                        .header("Authorization", adminBearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("USERNAME_ALREADY_EXISTS"));
+
+        // Rejeitado antes de chegar no service (403 estático em /admin/**) — não persiste.
+        mockMvc.perform(post("/admin/users")
+                        .header("Authorization", ownerBearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\": \"%s\", \"password\": \"secret\"}".formatted(CREATED_USER_PREFIX + UUID.randomUUID())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /admin/users: username maior que a coluna (255) é 400 de validação, não 409")
+    void createUserRejectsUsernameTooLong() throws Exception {
+        String tooLong = "x".repeat(256);
+
+        mockMvc.perform(post("/admin/users")
+                        .header("Authorization", adminBearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\": \"%s\", \"password\": \"secret\"}".formatted(tooLong)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     private String transactionBody(Long accountId) {

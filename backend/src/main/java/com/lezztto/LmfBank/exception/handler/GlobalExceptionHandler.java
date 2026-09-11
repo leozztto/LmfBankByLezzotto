@@ -6,6 +6,7 @@ import com.lezztto.LmfBank.auth.exception.AccountAlreadyLinkedException;
 import com.lezztto.LmfBank.auth.exception.AppUserNotFoundException;
 import com.lezztto.LmfBank.auth.exception.ForbiddenActionException;
 import com.lezztto.LmfBank.auth.exception.InvalidCredentialsException;
+import com.lezztto.LmfBank.auth.exception.UsernameAlreadyExistsException;
 import com.lezztto.LmfBank.exception.domain.ApiError;
 import com.lezztto.LmfBank.movement.exception.AccountStatusException;
 import com.lezztto.LmfBank.movement.exception.InsufficientBalanceException;
@@ -57,6 +58,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UsernameAlreadyExistsException.class)
+    public ResponseEntity<ApiError> handleUsernameAlreadyExists(
+            UsernameAlreadyExistsException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "USERNAME_ALREADY_EXISTS", ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccountAlreadyLinkedException.class)

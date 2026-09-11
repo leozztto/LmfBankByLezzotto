@@ -43,7 +43,9 @@ docker compose up --build     # ou: task up
 
 Login: **`demo` / `demo`** (usuário comum) ou **`admin` / `admin`** (vê qualquer conta —
 ADR 0010), ambos semeados por migration (`V2`/`V3__app_user_roles_and_account_link.sql`).
-Não há tela de cadastro de usuário de login (é distinto de abrir uma conta bancária).
+Não há **tela** de cadastro de usuário de login (é distinto de abrir uma conta bancária),
+mas o admin pode criar outros logins por API: `POST /admin/users` (`{username, password}`,
+sempre role `USER`, sem conta vinculada) — só endpoint, sem UI.
 
 `demo` começa **sem conta vinculada** — só um admin pode vincular uma (ADR 0010), nunca
 automático na abertura de conta. Pra ver algo como `demo`: abra uma conta em
