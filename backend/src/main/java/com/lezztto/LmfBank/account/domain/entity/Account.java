@@ -53,6 +53,7 @@ public class Account {
     private String phone;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Address> addresses = new ArrayList<>();
 
     @Column(nullable = false)
