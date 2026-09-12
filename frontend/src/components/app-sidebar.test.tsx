@@ -33,4 +33,18 @@ describe("AppSidebar", () => {
       "aria-current",
     );
   });
+
+  it("hides the Admin item for a regular user (ADR 0010)", () => {
+    pathname = "/dashboard";
+    render(<AppSidebar />);
+    expect(
+      screen.queryByRole("link", { name: "Admin" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the Admin item when isAdmin is true", () => {
+    pathname = "/dashboard";
+    render(<AppSidebar isAdmin />);
+    expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
+  });
 });
