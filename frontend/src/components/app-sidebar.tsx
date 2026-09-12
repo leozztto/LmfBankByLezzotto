@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   PiggyBank,
+  ShieldCheck,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -22,12 +23,17 @@ const NAV = [
   { href: "/statement", label: "Extrato", icon: FileText },
 ];
 
-export function AppSidebar() {
+const ADMIN_NAV_ITEM = { href: "/admin", label: "Admin", icon: ShieldCheck };
+
+/** `isAdmin` mostra o item "Admin" (ADR 0010) — a rota em si também se protege sozinha
+ *  (`(app)/admin/page.tsx`), então esconder o link aqui é só uma questão de UX. */
+export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV, ADMIN_NAV_ITEM] : NAV;
 
   return (
     <nav className="flex flex-col gap-1 p-3">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link

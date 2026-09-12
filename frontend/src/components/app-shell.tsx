@@ -26,7 +26,7 @@ export function AppShell({
         <div className="flex h-14 items-center border-b px-5 font-semibold">
           LmfBank
         </div>
-        <AppSidebar />
+        <AppSidebar isAdmin={session.role === "ADMIN"} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
