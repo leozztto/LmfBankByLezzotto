@@ -1,0 +1,168 @@
+name: backend-ci
+
+# Reutilizável (ADR 0006). Chamado por ci.yml quando `backend/**` muda.
+# workflow_dispatch permite rodar o backend isolado pela UI.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build, test & analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Única branch de longa duração que o SonarCloud analisa no plano free (a
+      # "main branch" do projeto). Push em outra branch só roda verify/cobertura.
+      # PR do mesmo repo sempre analisa.
+      SONAR_ANALYZED_BRANCH: ${{ vars.SONAR_ANALYZED_BRANCH || 'main' }}
+      # true só em PR vindo de fork (GitHub retém secrets → Sonar não roda).
+      IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Histórico completo para o blame e o "new code" do SonarCloud.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        # Build em JDK 21 porque o scanner do Sonar exige; o bytecode continua
+        # Java 17 (maven-compiler-plugin <release>, ver pom.xml).
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Check SonarCloud configuration
+        # Falha de propósito se a análise é esperada mas o token sumiu — um step
+        # pulado nunca deve parecer verde.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Check Pact configuration
+        # Igual ao check do Sonar: se a verificação de contrato é esperada mas o
+        # PACT_BROKER_TOKEN sumiu, falhar de propósito (step pulado != verde).
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
+        run: |
+          if [ -z "${{ secrets.PACT_BROKER_TOKEN }}" ]; then
+            echo "::error::PACT_BROKER_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Build, unit + integration tests, coverage
+        # `verify` roda surefire (unit) + failsafe (integração, sobre PostgreSQL
+        # via Testcontainers — Docker está disponível no ubuntu-latest) e o Flyway
+        # aplica as migrações. Gera os dois relatórios JaCoCo lidos pelo Sonar.
+        # O BackendContractVerificationIT baixa os pacts do broker e os verifica
+        # contra o app real (ADR 0008); pula sozinho se PACT_BROKER_BASE_URL faltar.
+        env:
+          PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          PACT_PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          publish=false
+          case "${{ github.event_name }}:${{ github.ref }}" in
+            pull_request:*|*:refs/heads/main|*:refs/heads/develop)
+              [ "${IS_FORK_PR}" != "true" ] && publish=true ;;
+          esac
+          ./mvnw -B --no-transfer-progress verify \
+            -Dpact.verifier.publishResults=$publish \
+            -Dpact.provider.version=$GITHUB_SHA \
+            -Dpact.provider.branch=$PACT_PROVIDER_BRANCH
+
+      - name: can-i-deploy (gate de contrato)
+        # Reprova o PR se o backend deste commit não for compatível com o contrato
+        # do frontend que ele precisa atender. Roda dentro de backend-ci, que
+        # alimenta o required check `ci` (ADR 0006). O backend job roda depois do
+        # frontend (ci.yml), então o pact desta branch já está no broker.
+        # Estratégia:
+        #   1. contrato do front na branch do PR (o frontend-ci publica com
+        #      --branch = branch de origem — ex. feature/monorepo);
+        #   2. senão, o contrato do front que já está na branch base;
+        #   3. se nem isso existe (bootstrap), emite ::warning:: e passa.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == 'refs/heads/main'
+          || github.ref == 'refs/heads/develop') }}
+        env:
+          PACT_BROKER_BASE_URL: ${{ vars.PACT_BROKER_BASE_URL || secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
+          BASE_BRANCH: ${{ github.base_ref || github.ref_name }}
+        run: |
+          set +e
+          cid() {
+            docker run --rm -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN \
+              pactfoundation/pact-cli:latest \
+              pact-broker can-i-deploy \
+                --pacticipant lmfbank-backend --version "$GITHUB_SHA" \
+                --pacticipant lmfbank-frontend --latest --branch "$1" \
+                --retry-while-unknown 18 --retry-interval 10 2>&1
+          }
+          # mensagens que significam "o front ainda não tem contrato aqui"
+          no_data='No version of lmfbank-frontend|No pacts or verifications have been published for version .* of lmfbank-frontend|no pacts (found|for)'
+
+          out=$(cid "$HEAD_BRANCH"); code=$?
+          if [ $code -ne 0 ] && [ "$HEAD_BRANCH" != "$BASE_BRANCH" ] && echo "$out" | grep -qiE "$no_data"; then
+            out=$(cid "$BASE_BRANCH"); code=$?
+          fi
+          echo "$out"
+
+          if [ $code -ne 0 ]; then
+            if echo "$out" | grep -qiE "$no_data"; then
+              echo "::warning::Sem contrato do frontend no broker para '$HEAD_BRANCH'/'$BASE_BRANCH' ainda — gate ignorado (bootstrap)."
+              exit 0
+            fi
+            exit $code
+          fi
+
+      - name: SonarCloud analysis
+        # Coordenadas (org/projectKey) vêm do pom.xml. `qualitygate.wait` reprova
+        # o job se o Quality Gate falhar.
+        if: >-
+          ${{ env.IS_FORK_PR != 'true'
+          && (github.event_name == 'pull_request'
+          || github.ref == format('refs/heads/{0}', env.SONAR_ANALYZED_BRANCH)) }}
+        run: >
+          ./mvnw -B --no-transfer-progress
+          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.qualitygate.wait=true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: jacoco-coverage
+          path: |
+            backend/target/site/jacoco/
+            backend/target/site/jacoco-it/
+          if-no-files-found: warn

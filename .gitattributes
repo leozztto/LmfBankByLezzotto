@@ -1,2 +1,22 @@
-/mvnw text eol=lf
+backend/mvnw text eol=lf
+*.sh text eol=lf
 *.cmd text eol=crlf
+
+# Workflows e YAML de infra: LF sempre — `run:` com CRLF quebra o bash no runner.
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Toolchain JS/TS (frontend): LF sempre. O Prettier normaliza p/ LF; sem isto o
+# core.autocrlf de cada dev gera churn de fim-de-linha no diff.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+
+# Hooks do husky: shell, LF.
+.husky/* text eol=lf

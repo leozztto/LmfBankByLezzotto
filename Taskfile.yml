@@ -1,0 +1,71 @@
+# Comandos padronizados entre local e CI (ADR 0002). Requer go-task (https://taskfile.dev)
+# e Docker Desktop com `docker compose` v2.
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  up:
+    desc: Build e sobe a stack completa (postgres, kafka, backend, frontend, nginx)
+    preconditions:
+      - sh: test -f .env
+        msg: "Copie .env.example para .env primeiro"
+    cmds:
+      - docker compose up --build -d
+
+  down:
+    desc: Para a stack, mantém o volume pgdata
+    cmds:
+      - docker compose down
+
+  down:clean:
+    desc: Para a stack e apaga volumes (DB limpo)
+    cmds:
+      - docker compose down -v
+
+  be:test:
+    desc: >-
+      Testes unitários + integração do backend (precisa de Docker para Testcontainers).
+      Inclui a verificação do provider Pact quando PACT_BROKER_BASE_URL está no ambiente (ADR 0008).
+    dir: backend
+    cmds:
+      - '{{if eq OS "windows"}}cmd /c mvnw.cmd -B verify{{else}}./mvnw -B verify{{end}}'
+
+  fe:test:
+    desc: Lint + testes unitários do frontend com cobertura
+    dir: frontend
+    cmds:
+      - npm ci
+      - npm run lint
+      - npm run test:coverage
+
+  fe:pact:
+    desc: Gera os pacts do consumer (frontend) exercitando a camada BFF — ADR 0008
+    dir: frontend
+    cmds:
+      - npm ci
+      - npm run pact:test
+
+  e2e:
+    desc: Sobe a stack em containers e roda a suíte Playwright ponta a ponta
+    dir: e2e
+    deps: [e2e:up]
+    cmds:
+      - npm ci
+      - npx playwright install --with-deps chromium
+      - defer: { task: e2e:down }
+      - npm test
+
+  e2e:up:
+    desc: Sobe a stack com os healthchecks do override de E2E e espera ficar saudável
+    cmds:
+      - '{{if eq OS "windows"}}powershell -Command "if (!(Test-Path .env)) { Copy-Item .env.example .env }"{{else}}cp -n .env.example .env || true{{end}}'
+      # recria zookeeper/kafka/backend do zero (evita nó efêmero preso no zookeeper
+      # de uma execução anterior); mantém o volume pgdata para acelerar o local
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml down
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml up -d --build --wait
+
+  e2e:down:
+    desc: Derruba a stack de E2E e apaga o volume do banco
+    cmds:
+      - docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml down -v

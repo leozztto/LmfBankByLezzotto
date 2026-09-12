@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lmf-bank
+
+  jpa:
+    hibernate:
+      # Schema é criado e versionado pelo Flyway (ADR 0005). O Hibernate apenas
+      # valida que as entidades batem com o schema. Default seguro herdado por
+      # todos os perfis de runtime.
+      ddl-auto: validate
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+  swagger-ui:
+    path: /swagger-ui
+    disable-swagger-default-url: true
+
+jwt:
+  secret: ${JWT_SECRET:minha-chave-local-super-secreta-123456}
+  expiration: ${JWT_EXPIRATION:86400000}
