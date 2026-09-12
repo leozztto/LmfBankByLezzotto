@@ -1,5 +1,23 @@
+name: lmfbank
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lmf-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lmf_bank}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-lmf_bank}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -24,18 +42,49 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  app:
-    build: .
-    container_name: lmf-bank-app
+  backend:
+    build: ./backend
+    container_name: lmf-backend
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmf_bank}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:
       - "8080:8080"
       - "5005:5005"
+
+  frontend:
+    build: ./frontend
+    container_name: lmf-frontend
+    depends_on:
+      - backend
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_CONFIG_LOCATION: classpath:/application.yaml,classpath:/application-docker.yaml
-      JWT_SECRET: minha-chave-super-secreta-minimo-32-caracteres
-      JWT_EXPIRATION: 86400000
-      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      # O BFF (route handlers do Next) repassa /api/* para cá. ADR 0007.
+      BACKEND_ORIGIN: http://backend:8080
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Cookie de sessão sem Secure enquanto o nginx serve HTTP puro; ligar sob TLS.
+      COOKIE_SECURE: "false"
+    expose:
+      - "3000"
+
+  nginx:
+    build: ./nginx
+    container_name: lmf-nginx
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

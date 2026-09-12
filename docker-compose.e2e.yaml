@@ -1,0 +1,71 @@
+# Override de E2E (Fase 4). Uso:
+#   docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml up -d --build --wait
+#
+# Acrescenta healthchecks (postgres já tem no base) para o `--wait` funcionar e
+# encadeia a ordem: zookeeper → kafka → backend (Flyway + consumer) → frontend →
+# nginx. `restart: on-failure` no kafka cobre o caso do nó efêmero /brokers/ids/1
+# ainda existir no zookeeper logo após um shutdown sujo.
+name: lmfbank
+
+services:
+  kafka:
+    restart: on-failure:3
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "localhost:29092",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+  backend:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    environment:
+      # sem o agente de debug JDWP que o compose base injeta
+      JAVA_TOOL_OPTIONS: ""
+      # Se o health do backend ficar instável por causa do Kafka, descomente:
+      # MANAGEMENT_HEALTH_KAFKA_ENABLED: "false"
+
+  frontend:
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # o server standalone do Next liga no $HOSTNAME (id do container) por
+      # padrão — força 0.0.0.0 para o healthcheck alcançar por 127.0.0.1
+      # (`localhost` no Alpine resolve ::1 primeiro, e o Next só escuta IPv4)
+      HOSTNAME: "0.0.0.0"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  nginx:
+    depends_on:
+      frontend:
+        condition: service_healthy
